@@ -18,27 +18,44 @@ final class HighlightRef: NSObject {
 }
 
 extension ReaderWindowController {
-    // H / K: highlight the selection, or with nothing selected, toggle highlight mode in that color.
-    @objc func highlightPrimary(_ sender: Any?) { highlightOrToggleMode(.primary) }
-    @objc func highlightSecondary(_ sender: Any?) { highlightOrToggleMode(.secondary) }
+    // H / K / U / S: mark up the selection, or with nothing selected, toggle that markup mode.
+    @objc func highlightPrimary(_ sender: Any?) { markOrToggleMode(MarkupStyle(kind: .highlight, color: .primary)) }
+    @objc func highlightSecondary(_ sender: Any?) { markOrToggleMode(MarkupStyle(kind: .highlight, color: .secondary)) }
+    @objc func underlineSelection(_ sender: Any?) { markOrToggleMode(MarkupStyle(kind: .underline, color: .line)) }
+    @objc func strikeSelection(_ sender: Any?) { markOrToggleMode(MarkupStyle(kind: .strikeOut, color: .line)) }
 
-    private func highlightOrToggleMode(_ color: HighlightColor) {
+    private func markOrToggleMode(_ style: MarkupStyle) {
         if let selection = pdfView.currentSelection, selection.hasText {
-            highlight(selection, color: color)
+            mark(selection, style: style)
             pdfView.clearSelection()
         } else {
-            highlightMode = highlightMode == color ? nil : color
+            markupMode = markupMode == style ? nil : style
         }
     }
 
-    /// In highlight mode every finished text selection becomes a highlight.
+    /// In a markup mode every finished text selection is marked up straight away.
     func selectionFinished() {
-        guard let color = highlightMode, let selection = pdfView.currentSelection, selection.hasText else { return }
-        highlight(selection, color: color)
+        guard let style = markupMode, let selection = pdfView.currentSelection, selection.hasText else { return }
+        mark(selection, style: style)
         pdfView.clearSelection()
     }
 
-    func highlight(_ selection: PDFSelection, color: HighlightColor) {
+    /// Right-click on selected text: mark it up without a shortcut.
+    func selectionMenuItems() -> [NSMenuItem] {
+        guard pdfView.currentSelection?.hasText == true else { return [] }
+        let items = [
+            NSMenuItem(title: "Highlight", action: #selector(highlightPrimary(_:)), keyEquivalent: ""),
+            NSMenuItem(title: "Underline", action: #selector(underlineSelection(_:)), keyEquivalent: ""),
+            NSMenuItem(title: "Strikethrough", action: #selector(strikeSelection(_:)), keyEquivalent: ""),
+        ]
+        items[0].image = HighlightColor.primary.swatch
+        items[1].image = NSImage(systemSymbolName: "underline", accessibilityDescription: nil)
+        items[2].image = NSImage(systemSymbolName: "strikethrough", accessibilityDescription: nil)
+        items.forEach { $0.target = self }
+        return items
+    }
+
+    func mark(_ selection: PDFSelection, style: MarkupStyle) {
         guard let reader else { return }
         guard reader.canAnnotate else { return showCannotAnnotate() }
         let lines = selection.selectionsByLine()
@@ -53,9 +70,10 @@ extension ReaderWindowController {
                 return [CGPoint(x: r.minX, y: r.maxY), CGPoint(x: r.maxX, y: r.maxY),
                         CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY)]
             }
-            added.append((AnnotationChange.makeHighlight(bounds: union, quadPoints: quads, color: color.color), page))
+            added.append((AnnotationChange.makeMarkup(type: style.kind.rawValue, bounds: union, quadPoints: quads,
+                                                      color: style.color.color, text: nil), page))
         }
-        changeAnnotations(adding: added, removing: [], actionName: "Highlight")
+        changeAnnotations(adding: added, removing: [], actionName: style.kind.name)
     }
 
     /// Removes highlights touching the current selection.
@@ -137,8 +155,8 @@ extension ReaderWindowController {
 
     func updateHighlightControls() {
         bar.highlightButton.tint = HighlightColor.primary.color.blended(withFraction: 0.25, of: .black) ?? .secondaryLabelColor
-        bar.highlightButton.activeColor = highlightMode?.color
-        toolbarControls.highlightItem?.image = Self.highlighterImage(color: highlightMode?.color)
+        bar.highlightButton.activeColor = markupMode?.color.color
+        toolbarControls.highlightItem?.image = Self.highlighterImage(color: markupMode?.color.color)
         bar.noteButton.activeColor = placingNote ? Self.noteColor : nil
         let noteImage = NSImage(systemSymbolName: "note.text", accessibilityDescription: "Add Note")
         toolbarControls.noteItem?.image = placingNote

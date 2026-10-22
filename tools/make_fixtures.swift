@@ -85,3 +85,33 @@ note.color = .systemYellow
 doc.page(at: 9)!.addAnnotation(note)
 doc.write(to: annotatedURL)
 print("Wrote fixtures to \(outDir.path)")
+
+// Form: a text field, a checkbox and a dropdown, for testing form filling and saving.
+let formURL = makePDF("forms.pdf", pages: 1) { _ in "Name:\n\n\nI agree:\n\n\nColor:" }
+let form = PDFDocument(url: formURL)!
+let formPage = form.page(at: 0)!
+func field(_ type: PDFAnnotationWidgetSubtype, _ name: String, _ rect: CGRect) -> PDFAnnotation {
+    let widget = PDFAnnotation(bounds: rect, forType: .widget, withProperties: nil)
+    widget.widgetFieldType = type
+    widget.fieldName = name
+    widget.backgroundColor = NSColor(white: 0.94, alpha: 1)
+    let border = PDFBorder()
+    border.lineWidth = 1
+    widget.border = border
+    widget.color = .gray
+    return widget
+}
+let nameField = field(.text, "name", CGRect(x: 150, y: 640, width: 260, height: 22))
+nameField.font = NSFont.systemFont(ofSize: 13)
+formPage.addAnnotation(nameField)
+let agreeBox = field(.button, "agree", CGRect(x: 150, y: 598, width: 18, height: 18))
+agreeBox.widgetControlType = .checkBoxControl
+agreeBox.buttonWidgetStateString = "Yes"
+formPage.addAnnotation(agreeBox)
+let colorChoice = field(.choice, "color", CGRect(x: 150, y: 552, width: 160, height: 22))
+colorChoice.isListChoice = false
+colorChoice.choices = ["Red", "Green", "Blue"]
+colorChoice.widgetStringValue = "Red"
+formPage.addAnnotation(colorChoice)
+form.write(to: formURL)
+print("Wrote forms.pdf")

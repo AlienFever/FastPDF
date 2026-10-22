@@ -27,7 +27,7 @@ enum MainMenu {
         file.addItem(.separator())
         file.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         file.addItem(withTitle: "Save", action: #selector(NSDocument.save(_:)), keyEquivalent: "s")
-        file.addItem(withTitle: "Autosave Highlights", action: #selector(AppDelegate.toggleAutosave(_:)), keyEquivalent: "")
+        file.addItem(withTitle: "Autosave Changes", action: #selector(AppDelegate.toggleAutosave(_:)), keyEquivalent: "")
 
         // Edit is inserted after launch; see addEditMenu.
 
@@ -45,6 +45,7 @@ enum MainMenu {
         view.addItem(item("Single Page", #selector(R.singlePage(_:)), "1"))
         view.addItem(item("Continuous", #selector(R.continuousScroll(_:)), "2"))
         view.addItem(item("Two Pages", #selector(R.twoPages(_:)), "3"))
+        view.addItem(item("Two Pages with Cover", #selector(R.twoPagesWithCover(_:)), "4"))
         view.addItem(.separator())
         view.addItem(item("Actual Size", #selector(R.actualSize(_:)), "0"))
         view.addItem(item("Fit Page", #selector(R.fitPage(_:)), "9"))
@@ -163,13 +164,22 @@ final class HighlightMenu: NSObject, NSMenuDelegate {
         second.image = secondary.swatch
         second.toolTip = first.toolTip
         menu.addItem(second)
+        let underline = MainMenu.item("Underline", #selector(R.underlineSelection(_:)), "u", [])
+        underline.image = NSImage(systemSymbolName: "underline", accessibilityDescription: nil)
+        underline.toolTip = first.toolTip
+        menu.addItem(underline)
+        let strike = MainMenu.item("Strikethrough", #selector(R.strikeSelection(_:)), "s", [])
+        strike.image = NSImage(systemSymbolName: "strikethrough", accessibilityDescription: nil)
+        strike.toolTip = first.toolTip
+        menu.addItem(strike)
         let note = MainMenu.item("Add Note", #selector(R.startPlacingNote(_:)), "n", [])
         note.image = NSImage(systemSymbolName: "note.text", accessibilityDescription: nil)
         note.toolTip = "Then click where the note should go."
         menu.addItem(note)
         menu.addItem(.separator())
         for (title, action) in [("Primary Color (H)", #selector(AppDelegate.setPrimaryHighlightColor(_:))),
-                                ("Secondary Color (K)", #selector(AppDelegate.setSecondaryHighlightColor(_:)))] {
+                                ("Secondary Color (K)", #selector(AppDelegate.setSecondaryHighlightColor(_:))),
+                                ("Line Color (U / S)", #selector(AppDelegate.setLineColor(_:)))] {
             let colors = NSMenu()
             for (i, color) in HighlightColor.allCases.enumerated() {
                 let item = NSMenuItem(title: color.name, action: action, keyEquivalent: "")

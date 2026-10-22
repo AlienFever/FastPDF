@@ -4,8 +4,8 @@
 import AppKit
 import PDFKit
 
-/// A PDF document. Reading is lazy and read-only; the only edits are highlight annotations, which are written
-/// back into the file (in the background) on ⌘S, or automatically when File ▸ Autosave Highlights is on.
+/// A PDF document. Reading is lazy; edits (annotations and form entries) are written
+/// back into the file (in the background) on ⌘S, or automatically when File ▸ Autosave Changes is on.
 @objc(ReaderDocument)
 final class ReaderDocument: NSDocument {
     private(set) var pdf: PDFDocument?
@@ -17,7 +17,15 @@ final class ReaderDocument: NSDocument {
     /// Annotation edits not yet written to disk, in order.
     private let changesLock = NSLock()
     private var pendingChanges: [AnnotationChange] = []
+    /// Form field values to write with the next save (snapshotted on the main thread when the save starts).
+    private var pendingForms: [FormValue] = []
     private var autosaveWork: DispatchWorkItem?
+
+    /// Form fields were changed since the last save. The window provides the values and is told when they're saved.
+    private(set) var formsEdited = false
+    var formValuesProvider: (() -> [FormValue])?
+    var formsSaved: (([FormValue]) -> Void)?
+    var checkForms: ((_ endEditing: Bool) -> Void)?
 
     static var autosaveEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: "AutosaveHighlights") }
@@ -60,7 +68,14 @@ final class ReaderDocument: NSDocument {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
     }
 
-    private var hasPendingChanges: Bool { changesLock.withLock { !pendingChanges.isEmpty } }
+    func formsDidChange() {
+        guard !formsEdited else { return }
+        formsEdited = true
+        updateChangeCount(.changeDone)
+        if Self.autosaveEnabled { scheduleSave() }
+    }
+
+    private var hasPendingChanges: Bool { formsEdited || changesLock.withLock { !pendingChanges.isEmpty } }
 
     func saveChanges(completion: ((Error?) -> Void)? = nil) {
         autosaveWork?.cancel()
@@ -68,10 +83,26 @@ final class ReaderDocument: NSDocument {
         save(to: url, ofType: fileType ?? "com.adobe.pdf", for: .saveOperation) { error in completion?(error) }
     }
 
-    /// ⌘S: nothing to do unless there are highlight edits (saving otherwise would only rewrite the file).
+    /// ⌘S: nothing to do unless there are edits (saving otherwise would only rewrite the file).
     override func save(_ sender: Any?) {
+        checkForms?(true)
         guard hasPendingChanges, isDocumentEdited else { return }
         super.save(sender)
+    }
+
+    /// Every save path (⌘S, the close prompt, autosave) comes through here on the main thread: snapshot the
+    /// form values now, while it's safe to read the document on screen.
+    override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
+                       completionHandler: @escaping (Error?) -> Void) {
+        let forms = formsEdited ? (formValuesProvider?() ?? []) : []
+        changesLock.withLock { pendingForms = forms }
+        super.save(to: url, ofType: typeName, for: saveOperation) { [self] error in
+            if error == nil, !forms.isEmpty {
+                formsEdited = false
+                formsSaved?(forms)
+            }
+            completionHandler(error)
+        }
     }
 
     override func canAsynchronouslyWrite(to url: URL, ofType typeName: String,
@@ -81,12 +112,13 @@ final class ReaderDocument: NSDocument {
     /// the document on screen, this opens its own copy of the current file and replays the pending edits onto it.
     override func write(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
                         originalContentsURL: URL?) throws {
-        let changes = changesLock.withLock { pendingChanges }
+        let (changes, forms) = changesLock.withLock { (pendingChanges, pendingForms) }
         let source = originalContentsURL ?? fileURL
         let identityURL = fileURL ?? url
         unblockUserInteraction()
         guard let source, let copy = PDFDocument(url: source) else { throw CocoaError(.fileReadNoSuchFile) }
         changes.forEach { $0.apply(to: copy) }
+        forms.forEach { $0.apply(to: copy) }
         guard copy.write(to: url) else { throw CocoaError(.fileWriteUnknown) }
         changesLock.withLock { pendingChanges.removeFirst(min(changes.count, pendingChanges.count)) }
         // PDFKit gives every saved file a new /ID; move bookmarks and position to the new identity.
@@ -111,6 +143,7 @@ final class ReaderDocument: NSDocument {
                   let method = target.method(for: selector) else { return }
             unsafeBitCast(method, to: ShouldClose.self)(target, selector, self, close, contextInfo)
         }
+        checkForms?(true)
         // Edits undone back to the saved state need no save.
         guard isDocumentEdited else { return reply(true) }
         // Without autosave: the standard "Do you want to save the changes…?" sheet (Save / Don't Save / Cancel).

@@ -11,8 +11,8 @@
 - macOS 26 (Tahoe) or later on Apple Silicon. Older macOS versions and Intel Macs are not supported.
 - Xcode 26 or later (or its command-line tools) to build.
 
-**There are no prebuilt downloads yet. The app is only ad-hoc signed, so build it yourself with the steps below.
-**
+**There are no prebuilt downloads yet. The app is only ad-hoc signed, so build it yourself with the steps below.**
+
 ## Build & install
 
 ```bash
@@ -30,19 +30,20 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 | | |
 |---|---|
 | Pages | Page box (type a number, then Return), ‹ › buttons, ← / →, Space, Page Up / Down, Home / End, ⌥⌘↑ / ⌥⌘↓ previous / next page, ⌥⌘G go to page, ⌘[ / ⌘] back / forward |
-| Layout | **D** cycles Single Page → Continuous → Two Pages, or ⌘1 / ⌘2 / ⌘3 |
+| Layout | **D** cycles Single Page → Continuous → Two Pages → Two Pages with Cover, or pick one with ⌘1 / ⌘2 / ⌘3 / ⌘4. *Two Pages with Cover* shows page 1 on its own and pairs the rest like an open book (2–3, 4–5, …). Each file remembers its layout. |
 | Zoom | **V** switches Fit Width ⇄ Fit Page. Also Fit Width ⌘8, Fit Page ⌘9, Actual Size ⌘0, ⌘+ / ⌘−, pinch. Fit Width and Fit Page stay in effect when the window is resized. |
 | Sidebar | ⌥⌘S shows or hides it. Contents (the PDF's outline) ⌥⌘1, Thumbnails ⌥⌘2, Highlights & Notes ⌥⌘3; click any entry to jump to it. Drag the grip on the sidebar's edge to resize it; double-click the grip to reset. |
 | Bookmarks | ⌘D bookmarks the current page (or removes the bookmark). The bookmark button or ⌥⌘B lists them; they're also in the Bookmarks menu. |
 | Find | ⌘F, then Return or ⌘G for the next match, ⇧Return or ⇧⌘G for the previous one, Esc to close. |
-| Highlights | Select text, then **H** (primary color) or **K** (secondary color). With nothing selected, H or K turns on *highlight mode*: every selection is highlighted as soon as you let go; press the same key again or Esc to stop. Choose the two colors (from six) in the **Annotate** menu. Right-click a highlight to change its color or remove it. |
+| Highlight, underline, strike through | Select text, then **H** (highlight, primary color), **K** (highlight, secondary color), **U** (underline) or **S** (strikethrough), or right-click the selection. With nothing selected, these keys turn on a *mode*: every selection is marked as soon as you let go; press the same key again or Esc to stop. Choose the two highlight colors and the line color (from seven) in the **Annotate** menu. Right-click a mark to change its color or remove it. |
 | Sticky notes | **N**, then click where the note should go (with text selected, N puts the note beside it), or right-click ▸ Add Note Here. Type, then ⌘Return or click outside to finish. Click any note, including notes already in the PDF, to read, edit or delete it. |
-| Undo | ⌘Z / ⇧⌘Z for highlights and notes. |
+| Forms | Fill in PDF forms: type into text fields, tick checkboxes and radio buttons, pick from dropdowns. Saved with everything else. |
+| Undo | ⌘Z / ⇧⌘Z for highlights, underlines, strike-throughs and notes. |
 | Toolbar | **⌥⌘T** (View ▸ Glass Toolbar) switches between the standard macOS 26 glass toolbar (the default; pages scroll underneath it) and a compact title-bar row, which opens files faster. |
 | Reading position | Each file reopens at the exact spot, zoom and layout you left it in, even after it's renamed or moved. |
 
-H, K, N, V and D are single keys. They only act while the page has focus, never while you're typing in the find or
-page box.
+H, K, U, S, N, V and D are single keys. They only act while the page has focus, never while you're typing in the
+find box, the page box or a form field.
 
 The compact title-bar row (⌥⌘T) instead of the glass toolbar: more room for the page, and faster opens:
 
@@ -60,12 +61,13 @@ Page thumbnails and the Two Pages layout (shown with the compact bar):
 
 ![The compact bar, the Thumbnails sidebar and two pages side by side at Fit Page](docs/screenshots/compact-two-pages.jpg)
 
-## Saving highlights and notes
+## Saving
 
-Highlights and notes are saved into the PDF itself, so Preview, Acrobat and other apps show them too. Nothing is
-written until you press **⌘S**. Until then the window's close button shows the usual unsaved-changes dot, and
-closing the window or quitting asks Save / Don't Save / Cancel. To save automatically instead (about 2 seconds after
-each change, and when a window closes), turn on **File ▸ Autosave Highlights**.
+Highlights, underlines, strike-throughs, notes and form entries are saved into the PDF itself, so Preview, Acrobat
+and other apps show them too. Nothing is written until you press **⌘S**. Until then the window's close button shows
+the usual unsaved-changes dot, and closing the window or quitting asks Save / Don't Save / Cancel. To save
+automatically instead (about 2 seconds after each change, and when a window closes), turn on
+**File ▸ Autosave Changes**.
 
 PDFKit can only save by rewriting the whole file, which takes several seconds for very large PDFs. FastPDF for Mac
 does this in the background on a separate copy of the document, so the window never freezes while saving.
@@ -97,27 +99,27 @@ What makes it fast:
 
 ## Known limits
 
-- **Annotations:** you can add highlights (six colors) and sticky notes. Underlines, strike-throughs, text boxes
-  and other annotations already in a PDF are displayed and listed. Underlines and strike-throughs can be recolored
-  or removed, but there's no way to create them.
+- **Annotations:** you can add highlights, underlines, strike-throughs and sticky notes. Text boxes, drawings,
+  shapes and other annotation types already in a PDF are displayed (and text boxes listed), but can't be created
+  or edited.
 - **Saving rewrites the whole PDF.** It takes a few seconds for very large files, and closing a window waits for an
   in-progress save. Each save gives the file a new internal ID (FastPDF for Mac carries its bookmarks and reading
   position over), and any digital signature becomes invalid.
-- **Password-protected PDFs**, and PDFs whose permissions don't allow comments, can be read but not annotated.
+- **Password-protected PDFs**, and PDFs whose permissions don't allow comments, can be read but not annotated, and
+  form entries in them aren't saved.
 - **Undoing the deletion of an annotation that was already in the PDF** brings back its type, position, color and
   text, but not other details such as the original author or date.
-- **Forms:** filling in PDF forms isn't supported. Anything typed into a form field isn't saved.
+- **Forms:** signature fields can't be signed, and form calculations or scripts (JavaScript) don't run.
 - **No printing.**
 - **Find** is always case- and accent-insensitive, and doesn't match a phrase that's split across two lines
   (a PDFKit limitation).
 - **Bookmarks and reading positions are stored on this Mac, not in the PDF.** They don't travel with the file to
   another computer, and two copies of the same PDF share them.
-- **Two Pages** always pairs pages 1–2, 3–4 and so on; there's no book layout with a separate cover page.
 
 ## Tools
 
 ```bash
-swift tools/make_fixtures.swift Tests/fixtures     # test PDFs: 1 page, 1,500 pages, outline + annotations
+swift tools/make_fixtures.swift Tests/fixtures     # test PDFs: 1 page, 1,500 pages, outline + annotations, a form
 xcrun swiftc -O tools/winbench.swift -o /tmp/winbench
 /tmp/winbench ~/Applications/"FastPDF for Mac.app" Tests/fixtures/big.pdf 7          # cold opens
 /tmp/winbench ~/Applications/"FastPDF for Mac.app" Tests/fixtures/big.pdf 7 --warm   # warm opens

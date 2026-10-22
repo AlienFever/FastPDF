@@ -60,6 +60,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         NotificationCenter.default.post(name: .highlightColorsChanged, object: nil)
     }
 
+    @objc func setLineColor(_ sender: NSMenuItem) {
+        HighlightColor.line = HighlightColor.allCases[sender.tag]
+        NotificationCenter.default.post(name: .highlightColorsChanged, object: nil)
+    }
+
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
         case #selector(toggleAutosave(_:)):
@@ -70,6 +75,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             item.state = HighlightColor.allCases[item.tag] == .primary ? .on : .off
         case #selector(setSecondaryHighlightColor(_:)):
             item.state = HighlightColor.allCases[item.tag] == .secondary ? .on : .off
+        case #selector(setLineColor(_:)):
+            item.state = HighlightColor.allCases[item.tag] == .line ? .on : .off
         default: break
         }
         return true

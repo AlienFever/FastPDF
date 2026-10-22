@@ -5,7 +5,7 @@ import AppKit
 import PDFKit
 
 enum HighlightColor: String, CaseIterable {
-    case yellow, green, blue, pink, purple, orange
+    case yellow, green, blue, pink, purple, orange, red
 
     var name: String { rawValue.capitalized }
 
@@ -17,6 +17,7 @@ enum HighlightColor: String, CaseIterable {
         case .pink: return NSColor(srgbRed: 1.00, green: 0.55, blue: 0.72, alpha: 1)
         case .purple: return NSColor(srgbRed: 0.76, green: 0.58, blue: 1.00, alpha: 1)
         case .orange: return NSColor(srgbRed: 1.00, green: 0.66, blue: 0.30, alpha: 1)
+        case .red: return NSColor(srgbRed: 0.92, green: 0.26, blue: 0.24, alpha: 1)
         }
     }
 
@@ -30,6 +31,12 @@ enum HighlightColor: String, CaseIterable {
         set { UserDefaults.standard.set(newValue.rawValue, forKey: "SecondaryHighlight") }
     }
 
+    /// Color for underlines and strike-throughs.
+    static var line: HighlightColor {
+        get { UserDefaults.standard.string(forKey: "LineColor").flatMap(Self.init(rawValue:)) ?? .red }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "LineColor") }
+    }
+
     /// Small color dot for menus.
     var swatch: NSImage {
         NSImage(size: NSSize(width: 12, height: 12), flipped: false) { rect in
@@ -38,6 +45,33 @@ enum HighlightColor: String, CaseIterable {
             return true
         }
     }
+}
+
+/// The text markups FastPDF for Mac can create. Raw values are the PDF annotation subtypes.
+enum MarkupKind: String {
+    case highlight = "Highlight", underline = "Underline", strikeOut = "StrikeOut"
+
+    var name: String {
+        switch self {
+        case .highlight: return "Highlight"
+        case .underline: return "Underline"
+        case .strikeOut: return "Strikethrough"
+        }
+    }
+
+    /// For the status line while the mode is on, e.g. "Underlining in Red".
+    var activeVerb: String {
+        switch self {
+        case .highlight: return "Highlighting"
+        case .underline: return "Underlining"
+        case .strikeOut: return "Striking through"
+        }
+    }
+}
+
+struct MarkupStyle: Equatable {
+    let kind: MarkupKind
+    let color: HighlightColor
 }
 
 /// One change to a page's annotations, recorded so the background save can replay it onto a fresh copy of the file.

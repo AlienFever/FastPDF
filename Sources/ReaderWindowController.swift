@@ -25,17 +25,21 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
     private(set) var usesGlassToolbar = false
 
     /// When set, every text selection is highlighted in this color as soon as the mouse is released.
-    var highlightMode: HighlightColor? {
+    /// When set, every text selection is marked up (highlight / underline / strike) as soon as the mouse is released.
+    var markupMode: MarkupStyle? {
         didSet {
-            if highlightMode != nil { placingNote = false }
+            if markupMode != nil { placingNote = false }
             updateHighlightControls()
         }
     }
 
+    /// Form field values per page as last saved (only pages whose fields have been touched).
+    var formBaseline: [Int: [FormValue]] = [:]
+
     /// N with nothing selected: the next click on a page places a sticky note there.
     var placingNote = false {
         didSet {
-            if placingNote { highlightMode = nil }
+            if placingNote { markupMode = nil }
             updateHighlightControls()
         }
     }
@@ -131,7 +135,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
     /// Find results take precedence; otherwise say when highlight mode is on.
     func refreshStatus() {
         var text = find.statusText
-        if text.isEmpty, let mode = highlightMode { text = "Highlighting in \(mode.name) · Esc to stop" }
+        if text.isEmpty, let mode = markupMode { text = "\(mode.kind.activeVerb) in \(mode.color.name) · Esc to stop" }
         if text.isEmpty, placingNote { text = "Click where the note should go · Esc to cancel" }
         if usesGlassToolbar {
             window?.subtitle = text
@@ -173,6 +177,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
             guard let pdf = reader?.pdf, pdfView.document !== pdf else { return }
             pdfView.document = pdf
             pdfView.removeTopInset()
+            connectForms()
         }
     }
 
@@ -220,6 +225,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         window?.layoutIfNeeded()
         let saved = reader?.savedState
         if let raw = saved?.displayMode, let mode = PDFDisplayMode(rawValue: raw) { pdfView.displayMode = mode }
+        pdfView.displaysAsBook = saved?.coverPage ?? false
         fit = saved?.fit.flatMap(Fit.init(rawValue:)) ?? .width
         if fit == .custom, let scale = saved?.scale {
             setScale(CGFloat(scale))
@@ -301,10 +307,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         let index = anchor.map { pdf.index(for: $0.page) } ?? currentPageIndex
         let point = anchor.map { [Double($0.point.x), Double($0.point.y)] }
         let mode = pdfView.displayMode.rawValue, fit = fit.rawValue, scale = Double(pdfView.scaleFactor)
+        let cover = pdfView.displaysAsBook
         FileStateStore.shared.update(key) { state in
             state.page = index
             state.point = point
             state.displayMode = mode
+            state.coverPage = cover
             state.fit = fit
             state.scale = scale
         }
@@ -428,28 +436,35 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
 
     // MARK: Display modes
 
-    private func setDisplayMode(_ mode: PDFDisplayMode) {
-        guard pdfView.displayMode != mode else { return }
+    /// `cover`: in Two Pages, page 1 stands alone and the rest pair up like an open book (2–3, 4–5, …).
+    private func setDisplayMode(_ mode: PDFDisplayMode, cover: Bool = false) {
+        guard pdfView.displayMode != mode || pdfView.displaysAsBook != cover else { return }
         let page = pdfView.currentPage
         pdfView.displayMode = mode
+        pdfView.displaysAsBook = cover
         applyFit(keepPosition: false)
         if let page { pdfView.go(to: page) }
         scheduleSave()
     }
 
+    private var isTwoPages: Bool { pdfView.displayMode == .twoUp || pdfView.displayMode == .twoUpContinuous }
+
     /// V: Fit Width ⇄ Fit Page.
     @objc func cycleFit(_ sender: Any?) { setFit(fit == .width ? .page : .width) }
 
-    /// D: Single Page → Continuous → Two Pages.
+    /// D: Single Page → Continuous → Two Pages → Two Pages with Cover.
     @objc func cycleLayout(_ sender: Any?) {
-        let order: [PDFDisplayMode] = [.singlePage, .singlePageContinuous, .twoUpContinuous]
-        let next = ((order.firstIndex(of: pdfView.displayMode) ?? 0) + 1) % order.count
-        setDisplayMode(order[next])
+        let order: [(PDFDisplayMode, Bool)] = [(.singlePage, false), (.singlePageContinuous, false),
+                                               (.twoUpContinuous, false), (.twoUpContinuous, true)]
+        let current = order.firstIndex { $0.0 == pdfView.displayMode && $0.1 == (isTwoPages && pdfView.displaysAsBook) } ?? 0
+        let next = order[(current + 1) % order.count]
+        setDisplayMode(next.0, cover: next.1)
     }
 
     @objc func singlePage(_ sender: Any?) { setDisplayMode(.singlePage) }
     @objc func continuousScroll(_ sender: Any?) { setDisplayMode(.singlePageContinuous) }
     @objc func twoPages(_ sender: Any?) { setDisplayMode(.twoUpContinuous) }
+    @objc func twoPagesWithCover(_ sender: Any?) { setDisplayMode(.twoUpContinuous, cover: true) }
 
     // MARK: Navigation
 
@@ -595,7 +610,8 @@ extension ReaderWindowController: NSMenuItemValidation {
         case #selector(fitPage(_:)): item.state = fit == .page ? .on : .off
         case #selector(singlePage(_:)): item.state = pdfView.displayMode == .singlePage ? .on : .off
         case #selector(continuousScroll(_:)): item.state = pdfView.displayMode == .singlePageContinuous ? .on : .off
-        case #selector(twoPages(_:)): item.state = pdfView.displayMode == .twoUpContinuous ? .on : .off
+        case #selector(twoPages(_:)): item.state = isTwoPages && !pdfView.displaysAsBook ? .on : .off
+        case #selector(twoPagesWithCover(_:)): item.state = isTwoPages && pdfView.displaysAsBook ? .on : .off
         case #selector(previousPage(_:)): return hasPages && pdfView.canGoToPreviousPage
         case #selector(nextPage(_:)): return hasPages && pdfView.canGoToNextPage
         case #selector(historyBack(_:)): return pdfView.canGoBack
@@ -605,7 +621,8 @@ extension ReaderWindowController: NSMenuItemValidation {
         case #selector(toggleBookmark(_:)):
             item.title = bookmarks.contains(currentPageIndex) ? "Remove Bookmark" : "Add Bookmark"
         case #selector(findNext(_:)), #selector(findPrevious(_:)): return find.hasMatches
-        case #selector(highlightPrimary(_:)), #selector(highlightSecondary(_:)), #selector(cycleFit(_:)),
+        case #selector(highlightPrimary(_:)), #selector(highlightSecondary(_:)), #selector(underlineSelection(_:)),
+             #selector(strikeSelection(_:)), #selector(cycleFit(_:)),
              #selector(cycleLayout(_:)), #selector(startPlacingNote(_:)):
             // Plain-letter shortcuts: only while reading, never while typing in a field.
             return hasPages && window?.firstResponder === pdfView
@@ -649,8 +666,8 @@ final class ReaderPDFView: PDFView {
 
     override func keyDown(with event: NSEvent) {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.numericPad, .function])
-        if event.keyCode == 53, let controller, controller.highlightMode != nil || controller.placingNote {
-            controller.highlightMode = nil   // Esc leaves highlight / note-placing mode
+        if event.keyCode == 53, let controller, controller.markupMode != nil || controller.placingNote {
+            controller.markupMode = nil   // Esc leaves markup / note-placing mode
             controller.placingNote = false
             return
         }
@@ -662,6 +679,8 @@ final class ReaderPDFView: PDFView {
             }
             if key == Int(("h" as Unicode.Scalar).value) { controller?.highlightPrimary(nil); return }
             if key == Int(("k" as Unicode.Scalar).value) { controller?.highlightSecondary(nil); return }
+            if key == Int(("u" as Unicode.Scalar).value) { controller?.underlineSelection(nil); return }
+            if key == Int(("s" as Unicode.Scalar).value) { controller?.strikeSelection(nil); return }
             if key == Int(("v" as Unicode.Scalar).value) { controller?.cycleFit(nil); return }
             if key == Int(("d" as Unicode.Scalar).value) { controller?.cycleLayout(nil); return }
             if key == Int(("n" as Unicode.Scalar).value) { controller?.startPlacingNote(nil); return }
@@ -682,8 +701,11 @@ final class ReaderPDFView: PDFView {
                 controller.editNote(note, on: page)
                 return
             }
+            controller.willClickPage(page)
         }
         super.mouseDown(with: event)
+        // Checkboxes and radio buttons change during the click itself.
+        controller?.checkFormChanges()
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -717,7 +739,7 @@ final class ReaderPDFView: PDFView {
             } else if let annotation = page.annotations.last(where: { $0.isTextMarkup && $0.markedAreaContains(pagePoint) }) {
                 items = controller.contextMenuItems(for: annotation, on: page)
             } else {
-                items = [controller.addNoteMenuItem(at: pagePoint, on: page), .separator()]
+                items = controller.selectionMenuItems() + [controller.addNoteMenuItem(at: pagePoint, on: page), .separator()]
             }
             for (i, item) in items.enumerated() { menu.insertItem(item, at: i) }
         }

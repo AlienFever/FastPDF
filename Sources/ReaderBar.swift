@@ -121,6 +121,7 @@ final class ReaderBar: NSView {
         menu.addItem(withTitle: "Single Page", action: #selector(R.singlePage(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Continuous", action: #selector(R.continuousScroll(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Two Pages", action: #selector(R.twoPages(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Two Pages with Cover", action: #selector(R.twoPagesWithCover(_:)), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Fit Width", action: #selector(R.fitWidth(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Fit Page", action: #selector(R.fitPage(_:)), keyEquivalent: "")

@@ -11,6 +11,8 @@ struct FileState: Codable {
     var point: [Double]?
     var bookmarks: [Int] = []
     var displayMode: Int?
+    /// Two Pages with the first page shown on its own.
+    var coverPage: Bool?
     var fit: String?
     var scale: Double?
     var lastOpened = Date()
