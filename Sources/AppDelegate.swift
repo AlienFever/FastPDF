@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppKit
@@ -80,10 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             DispatchQueue.main.async {
                 let alert = NSAlert()
                 if let error {
-                    alert.messageText = "Couldn’t make FastPDF the default PDF viewer"
+                    alert.messageText = "Couldn’t make FastPDF for Mac the default PDF viewer"
                     alert.informativeText = error.localizedDescription
                 } else {
-                    alert.messageText = "FastPDF is now your default PDF viewer"
+                    alert.messageText = "FastPDF for Mac is now your default PDF viewer"
                     alert.informativeText = "Double-clicking a PDF in Finder will open it here."
                 }
                 alert.runModal()

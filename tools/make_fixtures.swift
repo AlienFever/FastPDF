@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Generates test PDFs. Usage: swift tools/make_fixtures.swift Tests/fixtures

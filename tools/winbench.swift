@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Measures time from asking Launch Services to open a file until the app has a new on-screen window.

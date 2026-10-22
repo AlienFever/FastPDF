@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppKit
@@ -71,9 +71,9 @@ extension ReaderWindowController {
     @objc func recolorHighlight(_ sender: NSMenuItem) {
         guard let ref = sender.representedObject as? HighlightRef, let color = ref.color else { return }
         let old = ref.annotation
-        let new = AnnotationChange.makeHighlight(bounds: old.bounds,
-                                                 quadPoints: old.quadrilateralPoints?.map(\.pointValue) ?? [],
-                                                 color: color.color)
+        let new = AnnotationChange.makeMarkup(type: old.type ?? "Highlight", bounds: old.bounds,
+                                              quadPoints: old.quadrilateralPoints?.map(\.pointValue) ?? [],
+                                              color: color.color, text: old.contents)
         changeAnnotations(adding: [(new, ref.page)], removing: [(old, ref.page)], actionName: "Change Highlight Color")
     }
 
@@ -112,7 +112,7 @@ extension ReaderWindowController {
         let alert = NSAlert()
         alert.messageText = "This PDF can’t be highlighted"
         alert.informativeText = pdf?.isEncrypted == true
-            ? "FastPDF doesn’t save highlights into password-protected PDFs."
+            ? "FastPDF for Mac doesn’t save highlights into password-protected PDFs."
             : "The PDF’s permissions don’t allow comments or highlights."
         alert.beginSheetModal(for: window)
     }

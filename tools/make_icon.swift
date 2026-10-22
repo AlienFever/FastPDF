@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Draws the app icon and writes Resources/AppIcon.icns. Usage: swift tools/make_icon.swift

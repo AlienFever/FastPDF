@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppKit
@@ -7,16 +7,16 @@ enum MainMenu {
     static func build() -> NSMenu {
         let main = NSMenu()
 
-        let appMenu = submenu(in: main, title: "FastPDF")
-        appMenu.addItem(withTitle: "About FastPDF", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        let appMenu = submenu(in: main, title: "FastPDF for Mac")
+        appMenu.addItem(withTitle: "About FastPDF for Mac", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Make FastPDF the Default PDF Viewer", action: #selector(AppDelegate.makeDefaultViewer(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "Make FastPDF for Mac the Default PDF Viewer", action: #selector(AppDelegate.makeDefaultViewer(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Hide FastPDF", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Hide FastPDF for Mac", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]))
         appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit FastPDF", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit FastPDF for Mac", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         let file = submenu(in: main, title: "File")
         file.addItem(withTitle: "Open…", action: #selector(NSDocumentController.openDocument(_:)), keyEquivalent: "o")

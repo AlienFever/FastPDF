@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppKit
@@ -118,7 +118,7 @@ extension ReaderWindowController {
         let alert = NSAlert()
         alert.messageText = "Notes can’t be added to this PDF"
         alert.informativeText = pdf?.isEncrypted == true
-            ? "FastPDF doesn’t save annotations into password-protected PDFs."
+            ? "FastPDF for Mac doesn’t save annotations into password-protected PDFs."
             : "The PDF’s permissions don’t allow comments."
         alert.beginSheetModal(for: window)
     }

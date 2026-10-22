@@ -1,4 +1,4 @@
-// FastPDF — Copyright (C) 2026 Alienfever
+// FastPDF for Mac — Copyright (C) 2026 Alienfever
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import AppKit
@@ -67,7 +67,7 @@ struct AnnotationChange {
         case .add:
             page.addAnnotation(type == "Text"
                 ? Self.makeNote(bounds: bounds, text: contents ?? "", color: color)
-                : Self.makeHighlight(bounds: bounds, quadPoints: quadPoints, color: color))
+                : Self.makeMarkup(type: type, bounds: bounds, quadPoints: quadPoints, color: color, text: contents))
         case .remove:
             if let match = page.annotations.first(where: {
                 $0.type == type && $0.bounds.isClose(to: bounds) && (type != "Text" || $0.contents == contents)
@@ -89,7 +89,16 @@ struct AnnotationChange {
     }
 
     static func makeHighlight(bounds: CGRect, quadPoints: [CGPoint], color: NSColor) -> PDFAnnotation {
-        let annotation = PDFAnnotation(bounds: bounds, forType: .highlight, withProperties: nil)
+        makeMarkup(type: "Highlight", bounds: bounds, quadPoints: quadPoints, color: color, text: nil)
+    }
+
+    /// Highlight, underline, strike-through or squiggly, keeping its kind (recolor and undo must not turn an
+    /// underline into a highlight) and any comment attached to it.
+    static func makeMarkup(type: String, bounds: CGRect, quadPoints: [CGPoint], color: NSColor, text: String?) -> PDFAnnotation {
+        let subtype = ["Underline": PDFAnnotationSubtype.underline, "StrikeOut": .strikeOut,
+                       "Squiggly": PDFAnnotationSubtype(rawValue: "Squiggly")][type] ?? .highlight
+        let annotation = PDFAnnotation(bounds: bounds, forType: subtype, withProperties: nil)
+        if let text, !text.isEmpty { annotation.contents = text }
         annotation.quadrilateralPoints = quadPoints.map { NSValue(point: $0) }
         annotation.color = color
         annotation.modificationDate = Date()
