@@ -46,6 +46,10 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 H, K, N, V and D are single keys. They only act while the page has focus, never while you're typing in the find or
 page box.
 
+The compact title-bar row (⌥⌘T) instead of the glass toolbar: more room for the page, and faster opens:
+
+![FastPDF for Mac with the compact title-bar row instead of the glass toolbar](docs/screenshots/compact-bar.jpg)
+
 Highlights in two colors and a sticky note on the page:
 
 ![A page with yellow and green highlights and a sticky note icon in the margin](docs/screenshots/highlights-on-page.jpg)
@@ -54,7 +58,7 @@ Every highlight and note listed in the sidebar, with a note open for editing:
 
 ![The Highlights & Notes sidebar listing every highlight and note, and a sticky note open for editing](docs/screenshots/highlights-and-notes.jpg)
 
-The compact title-bar row (⌥⌘T) with page thumbnails and the Two Pages layout:
+Page thumbnails and the Two Pages layout (shown with the compact bar):
 
 ![The compact bar, the Thumbnails sidebar and two pages side by side at Fit Page](docs/screenshots/compact-two-pages.jpg)
 
