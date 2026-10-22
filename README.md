@@ -6,15 +6,13 @@
 
 <p align="center">A minimal PDF reader for macOS whose only goal is to feel instant. AppKit + PDFKit, no dependencies.</p>
 
-![FastPDF for Mac showing a document with the glass toolbar and the table of contents in the sidebar](docs/screenshots/main.jpg)
-
 ## Requirements
 
 - macOS 26 (Tahoe) or later on Apple Silicon. Older macOS versions and Intel Macs are not supported.
 - Xcode 26 or later (or its command-line tools) to build.
 
-There are no prebuilt downloads yet. The app is only ad-hoc signed, so build it yourself with the steps below.
-
+**There are no prebuilt downloads yet. The app is only ad-hoc signed, so build it yourself with the steps below.
+**
 ## Build & install
 
 ```bash
