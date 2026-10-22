@@ -2,6 +2,8 @@
 
 A minimal PDF reader for macOS whose only goal is to feel instant. AppKit + PDFKit, no dependencies.
 
+![FastPDF for Mac with the glass toolbar, the table of contents in the sidebar, two highlights and a sticky note](docs/screenshots/main.jpg)
+
 > **Back up PDFs you care about before annotating them.** When you save highlights or notes, FastPDF for Mac
 > rewrites the whole file through Apple's PDFKit (as Preview does). That works for ordinary PDFs, but it can alter
 > or drop unusual content, and it invalidates digital signatures. Reading never modifies a file.
@@ -43,6 +45,16 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 
 H, K, N, V and D are single keys. They only act while the page has focus, never while you're typing in the find or
 page box.
+
+### Screenshots
+
+Highlights & Notes in the sidebar, with a sticky note open:
+
+![The Highlights & Notes sidebar listing every highlight and note, and a sticky note open for editing](docs/screenshots/highlights-and-notes.jpg)
+
+The compact title-bar row (⌥⌘T) with page thumbnails and the Two Pages layout:
+
+![The compact bar, the Thumbnails sidebar and two pages side by side at Fit Page](docs/screenshots/compact-two-pages.jpg)
 
 ## Saving highlights and notes
 
@@ -106,6 +118,7 @@ xcrun swiftc -O tools/winbench.swift -o /tmp/winbench
 /tmp/winbench ~/Applications/"FastPDF for Mac.app" Tests/fixtures/big.pdf 7          # cold opens
 /tmp/winbench ~/Applications/"FastPDF for Mac.app" Tests/fixtures/big.pdf 7 --warm   # warm opens
 swift tools/make_icon.swift                         # regenerates Resources/AppIcon.icns
+swift tools/make_sample.swift sample.pdf            # the sample document shown in the screenshots
 ```
 
 The app logs its own timing for every open:

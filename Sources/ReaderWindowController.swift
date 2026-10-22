@@ -334,6 +334,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         guard scale.isFinite, scale > 0, abs(scale - pdfView.scaleFactor) > 0.0005 else { return }
         let anchor = keepPosition ? topAnchor() : nil
         setScale(scale)
+        // PDFKit adds spacing (e.g. between side-by-side pages) that the estimate above doesn't know about;
+        // if the pages still overflow the view, shrink just enough to remove the horizontal scroller.
+        pdfView.layoutDocumentView()
+        if let scrollView = pdfView.documentView?.enclosingScrollView, let content = scrollView.documentView {
+            let visible = scrollView.contentView.bounds.width
+            if content.frame.width > visible + 0.5 {
+                setScale(pdfView.scaleFactor * visible / content.frame.width)
+            }
+        }
         if let anchor { scroll(to: anchor) }
     }
 
@@ -620,6 +629,9 @@ final class ReaderPDFView: PDFView {
         guard let scrollView = documentView?.enclosingScrollView else { return }
         if scrollView.automaticallyAdjustsContentInsets { scrollView.automaticallyAdjustsContentInsets = false }
         if scrollView.contentInsets.top != 0 { scrollView.contentInsets = NSEdgeInsetsZero }
+        // PDFKit turns auto-hiding off, so with "Always show scroll bars" an empty horizontal scroller sat
+        // under every page even when nothing could scroll sideways.
+        if !scrollView.autohidesScrollers { scrollView.autohidesScrollers = true }
     }
 
     override func layout() {
