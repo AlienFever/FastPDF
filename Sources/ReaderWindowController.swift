@@ -120,12 +120,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
             window.standardWindowButton(.documentIconButton)?.isHidden = true
         }
         content.setBarHidden(glass)
-        // No automatic top inset under the glass toolbar: the document starts right at the top and the toolbar
-        // overlaps it. (The automatic inset left a large gap and was re-applied after scrolling, nudging the page.)
-        if let scrollView = pdfView.documentView?.enclosingScrollView {
-            scrollView.automaticallyAdjustsContentInsets = false
-            scrollView.contentInsets = NSEdgeInsetsZero
-        }
+        pdfView.removeTopInset()
         updatePageControls()
         updateZoomTitle()
         updateHighlightControls()
@@ -177,6 +172,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         didSet {
             guard let pdf = reader?.pdf, pdfView.document !== pdf else { return }
             pdfView.document = pdf
+            pdfView.removeTopInset()
         }
     }
 
@@ -231,12 +227,17 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
             applyFit(keepPosition: false)
         }
         pdfView.layoutDocumentView()
+        pdfView.removeTopInset()
         if let saved, let page = pdf.page(at: min(max(saved.page, 0), pdf.pageCount - 1)) {
             if let p = saved.point, p.count == 2 {
                 scroll(to: (page, CGPoint(x: p[0], y: p[1])))
             } else {
                 pdfView.go(to: page)
             }
+        } else if let first = pdf.page(at: 0) {
+            // New file: page 1 starts at the very top of the window, with the glass toolbar overlapping it.
+            let box = first.bounds(for: pdfView.displayBox)
+            scroll(to: (first, CGPoint(x: box.minX, y: box.maxY)))
         }
         updatePageControls()
         updateZoomTitle()
@@ -611,6 +612,20 @@ extension ReaderWindowController: NSMenuItemValidation {
 
 final class ReaderPDFView: PDFView {
     fileprivate weak var controller: ReaderWindowController?
+
+    /// The glass toolbar overlaps the document: no automatic top inset. PDFKit creates its scroll view lazily and
+    /// turns automatic insets back on when it (re)builds it, so this is re-applied on every layout pass. The
+    /// automatic inset both left a gap above page 1 and was re-applied after scrolling, nudging the page down.
+    func removeTopInset() {
+        guard let scrollView = documentView?.enclosingScrollView else { return }
+        if scrollView.automaticallyAdjustsContentInsets { scrollView.automaticallyAdjustsContentInsets = false }
+        if scrollView.contentInsets.top != 0 { scrollView.contentInsets = NSEdgeInsetsZero }
+    }
+
+    override func layout() {
+        super.layout()
+        removeTopInset()
+    }
 
     override func setFrameSize(_ newSize: NSSize) {
         // Capture the reading position while the old layout is still intact, so fit modes can restore it exactly.
