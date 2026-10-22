@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Generates the sample document used for the README screenshots: a short typeset essay with a table of
-// contents, highlights in two colors and a sticky note. Usage: swift tools/make_sample.swift out.pdf
+// contents, highlights in two colors and a sticky note.
+// Usage: swift tools/make_sample.swift out.pdf [--clean]   (--clean: no highlights or notes)
 import AppKit
 import CoreText
 import PDFKit
 
-let out = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "sample.pdf")
+let arguments = CommandLine.arguments.dropFirst().filter { $0 != "--clean" }
+let clean = CommandLine.arguments.contains("--clean")
+let out = URL(fileURLWithPath: arguments.first ?? "sample.pdf")
 let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
 let margin: CGFloat = 78
 
@@ -132,6 +135,7 @@ func mark(_ phrase: String, _ color: NSColor) {
 }
 let yellow = NSColor(srgbRed: 1.00, green: 0.86, blue: 0.20, alpha: 1)
 let green = NSColor(srgbRed: 0.55, green: 0.86, blue: 0.40, alpha: 1)
+if !clean {
 mark("When it makes you wait, even for a second, the thought you were following slips a little further away.", yellow)
 mark("Speed is not a feature you notice.", green)
 mark("Controls stay out of the way until they are needed, then answer immediately.", yellow)
@@ -145,6 +149,7 @@ if let selection = selection(of: "A good reader removes that friction"), let pag
     note.contents = "This is the whole idea in one sentence. Quote it in the intro."
     note.color = NSColor(srgbRed: 1.0, green: 0.84, blue: 0.25, alpha: 1)
     page.addAnnotation(note)
+}
 }
 doc.write(to: out)
 print("Wrote \(out.path): \(doc.pageCount) pages")

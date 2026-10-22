@@ -1,12 +1,12 @@
-# FastPDF for Mac
+<p align="center">
+  <img src="docs/icon.png" width="128" alt="FastPDF for Mac app icon">
+</p>
 
-A minimal PDF reader for macOS whose only goal is to feel instant. AppKit + PDFKit, no dependencies.
+<h1 align="center">FastPDF for Mac</h1>
 
-![FastPDF for Mac with the glass toolbar, the table of contents in the sidebar, two highlights and a sticky note](docs/screenshots/main.jpg)
+<p align="center">A minimal PDF reader for macOS whose only goal is to feel instant. AppKit + PDFKit, no dependencies.</p>
 
-> **Back up PDFs you care about before annotating them.** When you save highlights or notes, FastPDF for Mac
-> rewrites the whole file through Apple's PDFKit (as Preview does). That works for ordinary PDFs, but it can alter
-> or drop unusual content, and it invalidates digital signatures. Reading never modifies a file.
+![FastPDF for Mac showing a document with the glass toolbar and the table of contents in the sidebar](docs/screenshots/main.jpg)
 
 ## Requirements
 
@@ -27,7 +27,7 @@ it with macOS. There's no Xcode project; `build.sh` calls `swiftc` directly.
 To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF for Mac the Default PDF Viewer**
 (macOS asks you to confirm once).
 
-## Using it
+## Features
 
 | | |
 |---|---|
@@ -46,9 +46,11 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 H, K, N, V and D are single keys. They only act while the page has focus, never while you're typing in the find or
 page box.
 
-### Screenshots
+Highlights in two colors and a sticky note on the page:
 
-Highlights & Notes in the sidebar, with a sticky note open:
+![A page with yellow and green highlights and a sticky note icon in the margin](docs/screenshots/highlights-on-page.jpg)
+
+Every highlight and note listed in the sidebar, with a note open for editing:
 
 ![The Highlights & Notes sidebar listing every highlight and note, and a sticky note open for editing](docs/screenshots/highlights-and-notes.jpg)
 
@@ -118,7 +120,7 @@ xcrun swiftc -O tools/winbench.swift -o /tmp/winbench
 /tmp/winbench ~/Applications/"FastPDF for Mac.app" Tests/fixtures/big.pdf 7          # cold opens
 /tmp/winbench ~/Applications/"FastPDF for Mac.app" Tests/fixtures/big.pdf 7 --warm   # warm opens
 swift tools/make_icon.swift                         # regenerates Resources/AppIcon.icns
-swift tools/make_sample.swift sample.pdf            # the sample document shown in the screenshots
+swift tools/make_sample.swift sample.pdf [--clean]  # the sample document in the screenshots (--clean: no annotations)
 ```
 
 The app logs its own timing for every open:
