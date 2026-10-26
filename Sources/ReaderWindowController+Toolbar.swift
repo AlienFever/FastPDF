@@ -13,9 +13,8 @@ extension NSToolbarItem.Identifier {
     static let nextPage = Self("nextPage")
     static let highlight = Self("highlight")
     static let note = Self("note")
-    static let zoomOut = Self("zoomOut")
-    static let zoom = Self("zoom")
-    static let zoomIn = Self("zoomIn")
+    static let zoomGroup = Self("zoomGroup")
+    static let annotateGroup = Self("annotateGroup")
     static let bookmarks = Self("bookmarks")
     static let search = Self("search")
 }
@@ -24,7 +23,7 @@ extension NSToolbarItem.Identifier {
 final class ToolbarControls {
     let pageField = NSTextField()
     let pageCountLabel = NSTextField(labelWithString: "")
-    var zoomItem: NSMenuToolbarItem?
+    var zoomControl: NSSegmentedControl?
     var bookmarkItem: NSToolbarItem?
     var highlightItem: NSToolbarItem?
     var noteItem: NSToolbarItem?
@@ -47,7 +46,7 @@ extension ReaderWindowController: NSToolbarDelegate {
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [.toggleSidebar, .sidebarTrackingSeparator, .previousPage, .page, .nextPage, .flexibleSpace,
-         .highlight, .note, .zoomOut, .zoom, .zoomIn, .bookmarks, .search]
+         .annotateGroup, .zoomGroup, .bookmarks, .search]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -86,17 +85,33 @@ extension ReaderWindowController: NSToolbarDelegate {
             let item = button(id, "note.text", "Add Note (N)", #selector(startPlacingNote(_:)))
             controls.noteItem = item
             return item
-        case .zoomOut:
-            return button(id, "minus.magnifyingglass", "Zoom Out", #selector(zoomOutAction(_:)))
-        case .zoomIn:
-            return button(id, "plus.magnifyingglass", "Zoom In", #selector(zoomInAction(_:)))
-        case .zoom:
-            let item = NSMenuToolbarItem(itemIdentifier: id)
-            item.label = "View"
-            item.toolTip = "Page layout and zoom"
-            item.showsIndicator = true
-            item.menu = ReaderBar.viewMenu()
-            controls.zoomItem = item
+        case .annotateGroup:
+            let highlight = button(.highlight, "highlighter", "Highlight (H / K)", #selector(highlightPrimary(_:)))
+            let note = button(.note, "note.text", "Add Note (N)", #selector(startPlacingNote(_:)))
+            controls.highlightItem = highlight
+            controls.noteItem = note
+            let group = NSToolbarItemGroup(itemIdentifier: id)
+            group.subitems = [highlight, note]
+            group.label = "Annotate"
+            group.controlRepresentation = .expanded
+            return group
+        case .zoomGroup:
+            // One segmented control, so zoom out, the zoom level / layout menu and zoom in share one glass
+            // capsule (separate items, or an item group containing a menu item, split into three islands).
+            let control = NSSegmentedControl(labels: ["", "Fit Width", ""], trackingMode: .momentary,
+                                             target: self, action: #selector(zoomSegmentClicked(_:)))
+            control.setImage(NSImage(systemSymbolName: "minus.magnifyingglass", accessibilityDescription: "Zoom Out"), forSegment: 0)
+            control.setImage(NSImage(systemSymbolName: "plus.magnifyingglass", accessibilityDescription: "Zoom In"), forSegment: 2)
+            control.setWidth(Self.zoomButtonWidth, forSegment: 0)
+            control.setWidth(Self.zoomButtonWidth, forSegment: 2)
+            control.setShowsMenuIndicator(true, forSegment: 1)
+            control.setToolTip("Zoom Out", forSegment: 0)
+            control.setToolTip("Page layout and zoom", forSegment: 1)
+            control.setToolTip("Zoom In", forSegment: 2)
+            controls.zoomControl = control
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.view = control
+            item.label = "Zoom"
             return item
         case .bookmarks:
             let item = button(id, "bookmark", "Bookmarks", #selector(showBookmarks(_:)))
@@ -114,6 +129,19 @@ extension ReaderWindowController: NSToolbarDelegate {
             return item
         default:
             return nil
+        }
+    }
+
+    static let zoomButtonWidth: CGFloat = 34
+
+    @objc func zoomSegmentClicked(_ sender: NSSegmentedControl) {
+        switch sender.selectedSegment {
+        case 0: zoomOutAction(sender)
+        case 2: zoomInAction(sender)
+        default:
+            let x = Self.zoomButtonWidth + 2
+            let y = sender.isFlipped ? sender.bounds.maxY + 4 : -4
+            ReaderBar.viewMenu().popUp(positioning: nil, at: NSPoint(x: x, y: y), in: sender)
         }
     }
 

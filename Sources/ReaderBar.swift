@@ -70,7 +70,9 @@ final class ReaderBar: NSView {
     /// Leaves room for the traffic lights when the bar starts at the window's left edge.
     func setClearsWindowButtons(_ clears: Bool) {
         let buttons = window?.standardWindowButton(.zoomButton)?.frame.maxX ?? 70
-        leading.constant = clears ? buttons + 10 : 8
+        // The traffic lights aren't in the content area in full screen.
+        let fullScreen = window?.styleMask.contains(.fullScreen) == true
+        leading.constant = clears && !fullScreen ? buttons + 10 : 8
     }
 
     func showSearchField() -> NSTextField {
@@ -302,7 +304,9 @@ final class ReaderContentView: NSView {
             bar.topAnchor.constraint(equalTo: topAnchor),
             bar.leadingAnchor.constraint(equalTo: leadingAnchor),
             bar.trailingAnchor.constraint(equalTo: trailingAnchor),
-            bar.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            // Fill the title-bar strip; in full screen (no title bar) the minimum height wins and the bar
+            // becomes its own row instead of being squeezed out of sight.
+            { let c = bar.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor); c.priority = .init(999); return c }(),
             bar.heightAnchor.constraint(greaterThanOrEqualToConstant: 28),
             separator.topAnchor.constraint(equalTo: bar.bottomAnchor),
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),

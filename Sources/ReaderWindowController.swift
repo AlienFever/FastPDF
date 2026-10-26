@@ -251,6 +251,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { reader?.undoManager }
 
+    func windowDidEnterFullScreen(_ notification: Notification) { bar.setClearsWindowButtons(sidebarItem.isCollapsed) }
+    func windowDidExitFullScreen(_ notification: Notification) { bar.setClearsWindowButtons(sidebarItem.isCollapsed) }
+
     func windowWillClose(_ notification: Notification) {
         saveWork?.cancel()
         saveState()
@@ -413,7 +416,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         case .custom: title = "\(Int((pdfView.scaleFactor * 100).rounded()))%"
         }
         if bar.viewMenuButton.title != title { bar.viewMenuButton.title = title }
-        if let item = toolbarControls.zoomItem, item.title != title { item.title = title }
+        if let control = toolbarControls.zoomControl, control.label(forSegment: 1) != title {
+            control.setLabel(title, forSegment: 1)
+        }
     }
 
     @objc func showViewMenu(_ sender: Any?) {

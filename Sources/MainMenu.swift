@@ -20,10 +20,7 @@ enum MainMenu {
 
         let file = submenu(in: main, title: "File")
         file.addItem(withTitle: "Open…", action: #selector(NSDocumentController.openDocument(_:)), keyEquivalent: "o")
-        let recent = NSMenu(title: "Open Recent")
-        // NSDocumentController finds and manages this menu through its Clear Menu item.
-        recent.addItem(withTitle: "Clear Menu", action: #selector(NSDocumentController.clearRecentDocuments(_:)), keyEquivalent: "")
-        file.addItem(withTitle: "Open Recent", action: nil, keyEquivalent: "").submenu = recent
+        // AppKit inserts and manages "Open Recent" itself on macOS 26; adding our own gave two.
         file.addItem(.separator())
         file.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         file.addItem(withTitle: "Save", action: #selector(NSDocument.save(_:)), keyEquivalent: "s")
