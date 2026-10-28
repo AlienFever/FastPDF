@@ -32,13 +32,14 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 | Pages | Page box (type a number, then Return), ‹ › buttons, ← / →, Space, Page Up / Down, Home / End, ⌥⌘↑ / ⌥⌘↓ previous / next page, ⌥⌘G go to page, ⌘[ / ⌘] back / forward |
 | Layout | **D** cycles Single Page → Continuous → Two Pages → Two Pages with Cover, or pick one with ⌘1 / ⌘2 / ⌘3 / ⌘4. *Two Pages with Cover* shows page 1 on its own and pairs the rest like an open book (2–3, 4–5, …). Each file remembers its layout. |
 | Zoom | **V** switches Fit Width ⇄ Fit Page. Also Fit Width ⌘8, Fit Page ⌘9, Actual Size ⌘0, ⌘+ / ⌘−, pinch. Fit Width and Fit Page stay in effect when the window is resized. |
+| Rotate | The rotate button or ⌘R turns the current page 90° clockwise; ⌘L turns it counter-clockwise (also in the View menu and the right-click menu). Saved into the PDF like other changes. |
 | Sidebar | ⌥⌘S shows or hides it. Contents (the PDF's outline) ⌥⌘1, Thumbnails ⌥⌘2, Highlights & Notes ⌥⌘3; click any entry to jump to it. Drag the grip on the sidebar's edge to resize it; double-click the grip to reset. |
 | Bookmarks | ⌘D bookmarks the current page (or removes the bookmark). The bookmark button or ⌥⌘B lists them; they're also in the Bookmarks menu. |
 | Find | ⌘F, then Return or ⌘G for the next match, ⇧Return or ⇧⌘G for the previous one, Esc to close. |
 | Highlight, underline, strike through | Select text, then **H** (highlight, primary color), **K** (highlight, secondary color), **U** (underline) or **S** (strikethrough), or right-click the selection. With nothing selected, these keys turn on a *mode*: every selection is marked as soon as you let go; press the same key again or Esc to stop. Choose the two highlight colors and the line color (from seven) in the **Annotate** menu. Right-click a mark to change its color or remove it. |
 | Sticky notes | **N**, then click where the note should go (with text selected, N puts the note beside it), or right-click ▸ Add Note Here. Type, then ⌘Return or click outside to finish. Click any note, including notes already in the PDF, to read, edit or delete it. |
 | Forms | Fill in PDF forms: type into text fields, tick checkboxes and radio buttons, pick from dropdowns. Saved with everything else. |
-| Undo | ⌘Z / ⇧⌘Z for highlights, underlines, strike-throughs and notes. |
+| Undo | ⌘Z / ⇧⌘Z for highlights, underlines, strike-throughs, notes and page rotations. |
 | Toolbar | **⌥⌘T** (View ▸ Glass Toolbar) switches between the standard macOS 26 glass toolbar (the default; pages scroll underneath it) and a compact title-bar row, which opens files faster. |
 | Reading position | Each file reopens at the exact spot, zoom and layout you left it in, even after it's renamed or moved. |
 
@@ -63,7 +64,7 @@ Page thumbnails and the Two Pages layout (shown with the compact bar):
 
 ## Saving
 
-Highlights, underlines, strike-throughs, notes and form entries are saved into the PDF itself, so Preview, Acrobat
+Highlights, underlines, strike-throughs, notes, page rotations and form entries are saved into the PDF itself, so Preview, Acrobat
 and other apps show them too. Nothing is written until you press **⌘S**. Until then the window's close button shows
 the usual unsaved-changes dot, and closing the window or quitting asks Save / Don't Save / Cancel. To save
 automatically instead (about 2 seconds after each change, and when a window closes), turn on

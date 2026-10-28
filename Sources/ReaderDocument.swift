@@ -19,6 +19,8 @@ final class ReaderDocument: NSDocument {
     private var pendingChanges: [AnnotationChange] = []
     /// Form field values to write with the next save (snapshotted on the main thread when the save starts).
     private var pendingForms: [FormValue] = []
+    /// Page rotations not yet written to disk: page index → absolute rotation in degrees.
+    private var pendingRotations: [Int: Int] = [:]
     private var autosaveWork: DispatchWorkItem?
 
     /// Form fields were changed since the last save. The window provides the values and is told when they're saved.
@@ -75,7 +77,14 @@ final class ReaderDocument: NSDocument {
         if Self.autosaveEnabled { scheduleSave() }
     }
 
-    private var hasPendingChanges: Bool { formsEdited || changesLock.withLock { !pendingChanges.isEmpty } }
+    func recordRotation(pageIndex: Int, rotation: Int) {
+        changesLock.withLock { pendingRotations[pageIndex] = rotation }
+        if Self.autosaveEnabled { scheduleSave() }
+    }
+
+    private var hasPendingChanges: Bool {
+        formsEdited || changesLock.withLock { !pendingChanges.isEmpty || !pendingRotations.isEmpty }
+    }
 
     func saveChanges(completion: ((Error?) -> Void)? = nil) {
         autosaveWork?.cancel()
@@ -112,15 +121,22 @@ final class ReaderDocument: NSDocument {
     /// the document on screen, this opens its own copy of the current file and replays the pending edits onto it.
     override func write(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
                         originalContentsURL: URL?) throws {
-        let (changes, forms) = changesLock.withLock { (pendingChanges, pendingForms) }
+        let (changes, forms, rotations) = changesLock.withLock { (pendingChanges, pendingForms, pendingRotations) }
         let source = originalContentsURL ?? fileURL
         let identityURL = fileURL ?? url
         unblockUserInteraction()
         guard let source, let copy = PDFDocument(url: source) else { throw CocoaError(.fileReadNoSuchFile) }
         changes.forEach { $0.apply(to: copy) }
         forms.forEach { $0.apply(to: copy) }
+        for (index, rotation) in rotations { copy.page(at: index)?.rotation = rotation }
         guard copy.write(to: url) else { throw CocoaError(.fileWriteUnknown) }
-        changesLock.withLock { pendingChanges.removeFirst(min(changes.count, pendingChanges.count)) }
+        changesLock.withLock {
+            pendingChanges.removeFirst(min(changes.count, pendingChanges.count))
+            // Keep any rotation changed again while this save was running.
+            for (index, rotation) in rotations where pendingRotations[index] == rotation {
+                pendingRotations.removeValue(forKey: index)
+            }
+        }
         // PDFKit gives every saved file a new /ID; move bookmarks and position to the new identity.
         let newKey = PDFDocument(url: url).map { FileStateStore.key(for: $0, url: identityURL) }
         DispatchQueue.main.async { [self] in

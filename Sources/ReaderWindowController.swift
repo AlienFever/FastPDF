@@ -146,7 +146,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
 
     private func configureBar() {
         for button in [bar.previousButton, bar.nextButton, bar.highlightButton, bar.noteButton, bar.zoomOutButton, bar.viewMenuButton,
-                       bar.zoomInButton, bar.bookmarkButton, bar.searchButton] {
+                       bar.zoomInButton, bar.rotateButton, bar.bookmarkButton, bar.searchButton] {
             button.target = self
         }
         bar.pageField.target = self
@@ -464,6 +464,30 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         let current = order.firstIndex { $0.0 == pdfView.displayMode && $0.1 == (isTwoPages && pdfView.displaysAsBook) } ?? 0
         let next = order[(current + 1) % order.count]
         setDisplayMode(next.0, cover: next.1)
+    }
+
+    // MARK: Rotation
+
+    @objc func rotateRight(_ sender: Any?) { rotateCurrentPage(by: 90) }
+    @objc func rotateLeft(_ sender: Any?) { rotateCurrentPage(by: -90) }
+
+    /// Rotates the page being read (the left page of a two-page spread). Saved into the PDF like other edits.
+    private func rotateCurrentPage(by degrees: Int) {
+        guard let page = pdfView.currentPage else { return }
+        setRotation(of: page, to: ((page.rotation + degrees) % 360 + 360) % 360)
+    }
+
+    private func setRotation(of page: PDFPage, to rotation: Int) {
+        guard let pdf, let reader else { return }
+        let previous = page.rotation
+        page.rotation = rotation
+        reader.recordRotation(pageIndex: pdf.index(for: page), rotation: rotation)
+        pdfView.layoutDocumentView()
+        applyFit(keepPosition: false)
+        let box = page.bounds(for: pdfView.displayBox)
+        pdfView.go(to: PDFDestination(page: page, at: CGPoint(x: box.minX, y: box.maxY)))
+        reader.undoManager?.registerUndo(withTarget: self) { $0.setRotation(of: page, to: previous) }
+        reader.undoManager?.setActionName("Rotate Page")
     }
 
     @objc func singlePage(_ sender: Any?) { setDisplayMode(.singlePage) }

@@ -15,6 +15,7 @@ extension NSToolbarItem.Identifier {
     static let note = Self("note")
     static let zoomGroup = Self("zoomGroup")
     static let annotateGroup = Self("annotateGroup")
+    static let rotate = Self("rotate")
     static let bookmarks = Self("bookmarks")
     static let search = Self("search")
 }
@@ -46,7 +47,7 @@ extension ReaderWindowController: NSToolbarDelegate {
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [.toggleSidebar, .sidebarTrackingSeparator, .previousPage, .page, .nextPage, .flexibleSpace,
-         .annotateGroup, .zoomGroup, .bookmarks, .search]
+         .annotateGroup, .zoomGroup, .rotate, .bookmarks, .search]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -113,6 +114,8 @@ extension ReaderWindowController: NSToolbarDelegate {
             item.view = control
             item.label = "Zoom"
             return item
+        case .rotate:
+            return button(id, "rotate.right", "Rotate Page (⌘R)", #selector(rotateRight(_:)))
         case .bookmarks:
             let item = button(id, "bookmark", "Bookmarks", #selector(showBookmarks(_:)))
             controls.bookmarkItem = item

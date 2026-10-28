@@ -6,3 +6,7 @@ Tests/fixtures/*.pdf
 
 # macOS
 .DS_Store
+
+# Session notes (kept local)
+handoff.md
+docs/reports/

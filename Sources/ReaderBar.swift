@@ -21,6 +21,7 @@ final class ReaderBar: NSView {
     let zoomOutButton = BarButton(symbol: "minus.magnifyingglass", label: "Zoom Out", action: #selector(R.zoomOutAction(_:)))
     let viewMenuButton = BarButton(title: "Fit Width", label: "Page layout and zoom", action: #selector(R.showViewMenu(_:)))
     let zoomInButton = BarButton(symbol: "plus.magnifyingglass", label: "Zoom In", action: #selector(R.zoomInAction(_:)))
+    let rotateButton = BarButton(symbol: "rotate.right", label: "Rotate Page (⌘R)", action: #selector(R.rotateRight(_:)))
     let bookmarkButton = BarButton(symbol: "bookmark", label: "Bookmarks", action: #selector(R.showBookmarks(_:)))
     let findStatus = NSTextField(labelWithString: "")
     let searchButton = BarButton(symbol: "magnifyingglass", label: "Find", action: #selector(R.startFind(_:)))
@@ -47,7 +48,7 @@ final class ReaderBar: NSView {
 
         stack.setViews([
             sidebarButton, titleLabel, previousButton, FieldBackground(pageField, width: 40), pageCountLabel, nextButton,
-            highlightButton, noteButton, zoomOutButton, viewMenuButton, zoomInButton, bookmarkButton, findStatus, searchButton,
+            highlightButton, noteButton, zoomOutButton, viewMenuButton, zoomInButton, rotateButton, bookmarkButton, findStatus, searchButton,
         ], in: .leading)
         stack.spacing = 2
         stack.setCustomSpacing(8, after: sidebarButton)
@@ -131,6 +132,9 @@ final class ReaderBar: NSView {
         menu.addItem(.separator())
         menu.addItem(withTitle: "Zoom In", action: #selector(R.zoomInAction(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Zoom Out", action: #selector(R.zoomOutAction(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Rotate Left", action: #selector(R.rotateLeft(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Rotate Right", action: #selector(R.rotateRight(_:)), keyEquivalent: "")
         return menu
     }
 }
