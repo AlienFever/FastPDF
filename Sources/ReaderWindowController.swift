@@ -5,6 +5,11 @@ import AppKit
 import PDFKit
 
 final class ReaderWindowController: NSWindowController, NSWindowDelegate {
+    static var opensPDFsInTabs: Bool {
+        get { UserDefaults.standard.object(forKey: "OpenPDFsInTabs") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "OpenPDFsInTabs") }
+    }
+
     enum Fit: String { case width, page, custom }
 
     let pdfView = ReaderPDFView()
@@ -22,6 +27,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
     var bar: ReaderBar { content.bar }
     let toolbarControls = ToolbarControls()
     private lazy var glassToolbar = makeToolbar()
+    private lazy var compactAccessory: NSTitlebarAccessoryViewController = {
+        let accessory = NSTitlebarAccessoryViewController()
+        accessory.layoutAttribute = .top
+        bar.frame = NSRect(x: 0, y: 0, width: 900, height: 32)
+        accessory.view = bar
+        return accessory
+    }()
     private(set) var usesGlassToolbar = false
 
     /// When set, every text selection is highlighted in this color as soon as the mouse is released.
@@ -57,6 +69,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 1000),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                               backing: .buffered, defer: true)
+        window.tabbingIdentifier = "FastPDFDocuments"
+        window.tabbingMode = Self.opensPDFsInTabs ? .preferred : .disallowed
         window.minSize = NSSize(width: 480, height: 320)
         window.isReleasedWhenClosed = false
         window.animationBehavior = .none
@@ -109,6 +123,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         let glass = Self.prefersGlassToolbar
         usesGlassToolbar = glass
         if glass {
+            if let index = window.titlebarAccessoryViewControllers.firstIndex(where: { $0 === compactAccessory }) {
+                window.removeTitlebarAccessoryViewController(at: index)
+            }
             window.titlebarAppearsTransparent = false
             window.titleVisibility = .visible
             window.toolbarStyle = .unified
@@ -117,6 +134,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         } else {
             window.toolbar = nil
             window.toolbarStyle = .automatic
+            if !window.titlebarAccessoryViewControllers.contains(where: { $0 === compactAccessory }) {
+                window.addTitlebarAccessoryViewController(compactAccessory)
+            }
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             bar.setClearsWindowButtons(sidebarItem.isCollapsed)
@@ -144,9 +164,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
+    @objc func savePDFAs(_ sender: Any?) {
+        reader?.saveAs(sender)
+    }
+
     private func configureBar() {
         for button in [bar.previousButton, bar.nextButton, bar.highlightButton, bar.noteButton, bar.zoomOutButton, bar.viewMenuButton,
-                       bar.zoomInButton, bar.rotateButton, bar.bookmarkButton, bar.searchButton] {
+                       bar.zoomInButton, bar.rotateButton, bar.bookmarkButton, bar.saveAsButton, bar.searchButton] {
             button.target = self
         }
         bar.pageField.target = self
@@ -187,8 +211,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         guard let window else { return }
         if !didPrepare {
             didPrepare = true
-            cascadeFromFrontWindow()
-            restoreState()
+            let front = NSApp.orderedWindows.first {
+                $0 !== window && $0.isVisible && $0.windowController is ReaderWindowController
+            }
+            if Self.opensPDFsInTabs, let front {
+                restoreState()
+                front.addTabbedWindow(window, ordered: .above)
+            } else {
+                cascadeFromFrontWindow()
+                restoreState()
+            }
         }
         // Skip super: NSWindowController routes Finder opens through the "seamless open" zoom-from-icon animation.
         window.makeKeyAndOrderFront(sender)

@@ -99,6 +99,11 @@ final class ReaderDocument: NSDocument {
         super.save(sender)
     }
 
+    override func saveAs(_ sender: Any?) {
+        checkForms?(true)
+        super.saveAs(sender)
+    }
+
     /// Every save path (⌘S, the close prompt, autosave) comes through here on the main thread: snapshot the
     /// form values now, while it's safe to read the document on screen.
     override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,

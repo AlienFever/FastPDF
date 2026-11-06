@@ -18,6 +18,7 @@ extension NSToolbarItem.Identifier {
     static let rotate = Self("rotate")
     static let bookmarks = Self("bookmarks")
     static let search = Self("search")
+    static let saveAs = Self("saveAs")
 }
 
 /// The glass toolbar's live controls (nil until the toolbar is first shown).
@@ -47,7 +48,7 @@ extension ReaderWindowController: NSToolbarDelegate {
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [.toggleSidebar, .sidebarTrackingSeparator, .previousPage, .page, .nextPage, .flexibleSpace,
-         .annotateGroup, .zoomGroup, .rotate, .bookmarks, .search]
+         .annotateGroup, .zoomGroup, .rotate, .bookmarks, .saveAs, .search]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -120,6 +121,8 @@ extension ReaderWindowController: NSToolbarDelegate {
             let item = button(id, "bookmark", "Bookmarks", #selector(showBookmarks(_:)))
             controls.bookmarkItem = item
             return item
+        case .saveAs:
+            return button(id, "square.and.arrow.down", "Save As… (⇧⌘S)", #selector(savePDFAs(_:)))
         case .search:
             let item = NSSearchToolbarItem(itemIdentifier: id)
             item.label = "Find"

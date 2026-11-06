@@ -3,7 +3,7 @@
 
 import AppKit
 
-/// The controls row, drawn in the title bar next to the traffic lights.
+/// The compact controls row, hosted above the native tab bar as a titlebar accessory.
 ///
 /// Built from hand-drawn views rather than NSToolbar / NSButton / NSSearchField: on macOS 26 those standard controls
 /// size and render through SwiftUI, which cost ~85 ms per window for a toolbar and ~30 ms for a bar of stock
@@ -23,6 +23,7 @@ final class ReaderBar: NSView {
     let zoomInButton = BarButton(symbol: "plus.magnifyingglass", label: "Zoom In", action: #selector(R.zoomInAction(_:)))
     let rotateButton = BarButton(symbol: "rotate.right", label: "Rotate Page (⌘R)", action: #selector(R.rotateRight(_:)))
     let bookmarkButton = BarButton(symbol: "bookmark", label: "Bookmarks", action: #selector(R.showBookmarks(_:)))
+    let saveAsButton = BarButton(symbol: "square.and.arrow.down", label: "Save As… (⇧⌘S)", action: #selector(R.savePDFAs(_:)))
     let findStatus = NSTextField(labelWithString: "")
     let searchButton = BarButton(symbol: "magnifyingglass", label: "Find", action: #selector(R.startFind(_:)))
     /// Created on first use (⌘F or the magnifier), so opening a document never pays for it.
@@ -48,7 +49,7 @@ final class ReaderBar: NSView {
 
         stack.setViews([
             sidebarButton, titleLabel, previousButton, FieldBackground(pageField, width: 40), pageCountLabel, nextButton,
-            highlightButton, noteButton, zoomOutButton, viewMenuButton, zoomInButton, rotateButton, bookmarkButton, findStatus, searchButton,
+            highlightButton, noteButton, zoomOutButton, viewMenuButton, zoomInButton, rotateButton, bookmarkButton, saveAsButton, findStatus, searchButton,
         ], in: .leading)
         stack.spacing = 2
         stack.setCustomSpacing(8, after: sidebarButton)
@@ -68,12 +69,9 @@ final class ReaderBar: NSView {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    /// Leaves room for the traffic lights when the bar starts at the window's left edge.
+    /// Controls occupy their own row below the window chrome.
     func setClearsWindowButtons(_ clears: Bool) {
-        let buttons = window?.standardWindowButton(.zoomButton)?.frame.maxX ?? 70
-        // The traffic lights aren't in the content area in full screen.
-        let fullScreen = window?.styleMask.contains(.fullScreen) == true
-        leading.constant = clears && !fullScreen ? buttons + 10 : 8
+        leading.constant = (window?.standardWindowButton(.zoomButton)?.frame.maxX ?? 70) + 10
     }
 
     func showSearchField() -> NSTextField {
@@ -281,40 +279,27 @@ final class FieldBackground: NSView {
     }
 }
 
-/// Window content. Compact mode: the bar in the title-bar strip, the PDF below it. Glass mode: the PDF runs
+/// Window content. Compact mode: the PDF starts below the accessory controls and native tabs. Glass mode: the PDF runs
 /// up under the translucent toolbar (its scroll view is inset so the first page still starts below it).
 final class ReaderContentView: NSView {
     let bar = ReaderBar()
-    private let separator = NSBox()
     let sidebarHandle = SidebarResizeHandle()
     private var pdfBelowBar: NSLayoutConstraint!
     private var pdfUnderToolbar: NSLayoutConstraint!
 
     func setBarHidden(_ hidden: Bool) {
         bar.isHidden = hidden
-        separator.isHidden = hidden
         pdfBelowBar.isActive = !hidden
         pdfUnderToolbar.isActive = hidden
     }
 
     init(pdfView: NSView, frame: NSRect) {
         super.init(frame: frame)
-        separator.boxType = .separator
-        for subview in [bar, separator, pdfView, sidebarHandle] {
+        for subview in [pdfView, sidebarHandle] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             addSubview(subview)
         }
         NSLayoutConstraint.activate([
-            bar.topAnchor.constraint(equalTo: topAnchor),
-            bar.leadingAnchor.constraint(equalTo: leadingAnchor),
-            bar.trailingAnchor.constraint(equalTo: trailingAnchor),
-            // Fill the title-bar strip; in full screen (no title bar) the minimum height wins and the bar
-            // becomes its own row instead of being squeezed out of sight.
-            { let c = bar.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor); c.priority = .init(999); return c }(),
-            bar.heightAnchor.constraint(greaterThanOrEqualToConstant: 28),
-            separator.topAnchor.constraint(equalTo: bar.bottomAnchor),
-            separator.leadingAnchor.constraint(equalTo: leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: trailingAnchor),
             pdfView.leadingAnchor.constraint(equalTo: leadingAnchor),
             pdfView.trailingAnchor.constraint(equalTo: trailingAnchor),
             pdfView.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -323,7 +308,7 @@ final class ReaderContentView: NSView {
             sidebarHandle.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             sidebarHandle.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        pdfBelowBar = pdfView.topAnchor.constraint(equalTo: separator.bottomAnchor)
+        pdfBelowBar = pdfView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor)
         pdfUnderToolbar = pdfView.topAnchor.constraint(equalTo: topAnchor)
         pdfBelowBar.isActive = true
     }

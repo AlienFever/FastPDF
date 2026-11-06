@@ -24,6 +24,7 @@ enum MainMenu {
         file.addItem(.separator())
         file.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         file.addItem(withTitle: "Save", action: #selector(NSDocument.save(_:)), keyEquivalent: "s")
+        file.addItem(item("Save As…", #selector(NSDocument.saveAs(_:)), "s", [.command, .shift]))
         file.addItem(withTitle: "Autosave Changes", action: #selector(AppDelegate.toggleAutosave(_:)), keyEquivalent: "")
 
         // Edit is inserted after launch; see addEditMenu.
@@ -82,6 +83,10 @@ enum MainMenu {
         marks.delegate = BookmarksMenu.shared
 
         let window = submenu(in: main, title: "Window")
+        window.addItem(withTitle: "Open PDFs in Tabs", action: #selector(AppDelegate.togglePDFTabs(_:)), keyEquivalent: "")
+        window.addItem(item("Show Previous Tab", #selector(NSWindow.selectPreviousTab(_:)), "\t", [.control, .shift]))
+        window.addItem(item("Show Next Tab", #selector(NSWindow.selectNextTab(_:)), "\t", [.control]))
+        window.addItem(.separator())
         window.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         window.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
         window.addItem(.separator())

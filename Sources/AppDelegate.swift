@@ -43,6 +43,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         NotificationCenter.default.post(name: .chromeStyleChanged, object: nil)
     }
 
+    @objc func togglePDFTabs(_ sender: Any?) {
+        ReaderWindowController.opensPDFsInTabs.toggle()
+        let enabled = ReaderWindowController.opensPDFsInTabs
+        let windows = NSApp.orderedWindows.filter { $0.windowController is ReaderWindowController }
+        let selected = NSApp.keyWindow
+        for window in windows {
+            window.tabbingMode = enabled ? .preferred : .disallowed
+        }
+        if enabled, let front = windows.first {
+            for window in windows.dropFirst() where !(front.tabbedWindows?.contains(window) ?? false) {
+                front.addTabbedWindow(window, ordered: .below)
+            }
+        } else if !enabled {
+            for window in windows {
+                if let group = window.tabGroup, group.windows.count > 1 {
+                    group.removeWindow(window)
+                    window.orderFront(nil)
+                }
+            }
+        }
+        selected?.makeKeyAndOrderFront(nil)
+    }
+
     @objc func toggleAutosave(_ sender: Any?) {
         ReaderDocument.autosaveEnabled.toggle()
         if ReaderDocument.autosaveEnabled {
@@ -67,6 +90,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
+        case #selector(togglePDFTabs(_:)):
+            item.state = ReaderWindowController.opensPDFsInTabs ? .on : .off
         case #selector(toggleAutosave(_:)):
             item.state = ReaderDocument.autosaveEnabled ? .on : .off
         case #selector(toggleGlassToolbar(_:)):

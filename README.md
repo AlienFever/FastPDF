@@ -41,6 +41,7 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 | Forms | Fill in PDF forms: type into text fields, tick checkboxes and radio buttons, pick from dropdowns. Saved with everything else. |
 | Undo | ⌘Z / ⇧⌘Z for highlights, underlines, strike-throughs, notes and page rotations. |
 | Toolbar | **⌥⌘T** (View ▸ Glass Toolbar) switches between the standard macOS 26 glass toolbar (the default; pages scroll underneath it) and a compact title-bar row, which opens files faster. |
+| Tabs | PDFs open in native macOS tabs by default. **Window ▸ Open PDFs in Tabs** toggles tabs and remembers the choice. Turning it off separates open PDFs into windows; turning it on groups them together. Tabs sit below the controls and above the PDF in both compact and Glass modes. Use Control-Tab / Control-Shift-Tab to switch tabs. |
 | Reading position | Each file reopens at the exact spot, zoom and layout you left it in, even after it's renamed or moved. |
 
 H, K, U, S, N, V and D are single keys. They only act while the page has focus, never while you're typing in the
@@ -63,6 +64,9 @@ Page thumbnails and the Two Pages layout (shown with the compact bar):
 ![The compact bar, the Thumbnails sidebar and two pages side by side at Fit Page](docs/screenshots/compact-two-pages.jpg)
 
 ## Saving
+
+Use the **Save As** toolbar button or **File ▸ Save As… (⇧⌘S)** to choose a new name or location for the PDF,
+including pending edits. The window then uses the saved file for future changes.
 
 Highlights, underlines, strike-throughs, notes, page rotations and form entries are saved into the PDF itself, so Preview, Acrobat
 and other apps show them too. Nothing is written until you press **⌘S**. Until then the window's close button shows
