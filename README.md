@@ -40,14 +40,14 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 | Sticky notes | **N**, then click where the note should go (with text selected, N puts the note beside it), or right-click ▸ Add Note Here. Type, then ⌘Return or click outside to finish. Click any note, including notes already in the PDF, to read, edit or delete it. |
 | Forms | Fill in PDF forms: type into text fields, tick checkboxes and radio buttons, pick from dropdowns. Saved with everything else. |
 | Undo | ⌘Z / ⇧⌘Z for highlights, underlines, strike-throughs, notes and page rotations. |
-| Toolbar | **⌥⌘T** (View ▸ Glass Toolbar) switches between the standard macOS 26 glass toolbar (the default; pages scroll underneath it) and a compact title-bar row, which opens files faster. |
+| Toolbar | **⌥⌘T** (View ▸ Glass Toolbar) switches between the standard macOS 26 glass toolbar (the default; pages scroll underneath it) and a compact row beside the window buttons. |
 | Tabs | PDFs open in native macOS tabs by default. **Window ▸ Open PDFs in Tabs** toggles tabs and remembers the choice. Turning it off separates open PDFs into windows; turning it on groups them together. Tabs sit below the controls and above the PDF in both compact and Glass modes. Use Control-Tab / Control-Shift-Tab to switch tabs. |
 | Reading position | Each file reopens at the exact spot, zoom and layout you left it in, even after it's renamed or moved. |
 
 H, K, U, S, N, V and D are single keys. They only act while the page has focus, never while you're typing in the
 find box, the page box or a form field.
 
-The compact title-bar row (⌥⌘T) instead of the glass toolbar: more room for the page, and faster opens:
+Earlier screenshot of the compact title-bar controls (⌥⌘T):
 
 ![FastPDF for Mac with the compact title-bar row instead of the glass toolbar](docs/screenshots/compact-bar.jpg)
 
@@ -69,17 +69,29 @@ Use the **Save As** toolbar button or **File ▸ Save As… (⇧⌘S)** to choos
 including pending edits. The window then uses the saved file for future changes.
 
 Highlights, underlines, strike-throughs, notes, page rotations and form entries are saved into the PDF itself, so Preview, Acrobat
-and other apps show them too. Nothing is written until you press **⌘S**. Until then the window's close button shows
-the usual unsaved-changes dot, and closing the window or quitting asks Save / Don't Save / Cancel. To save
+and other apps show them too. With autosave off, **⌘S** writes edits to the current file. The close button shows a dot while edits are pending, and closing or quitting prompts you to save. To save
 automatically instead (about 2 seconds after each change, and when a window closes), turn on
 **File ▸ Autosave Changes**.
 
 PDFKit can only save by rewriting the whole file, which takes several seconds for very large PDFs. FastPDF for Mac
-does this in the background on a separate copy of the document, so the window never freezes while saving.
+does this in the background on a separate copy of the document, so you can keep reading during the write.
 
 ## Speed
 
-How long it takes from asking macOS to open a PDF until its window is on screen. Measured on an M1 MacBook Air,
+On November 6, 2026, we compared the Save As and tabs release with its immediate predecessor using the same one-page PDF. Each value is the median of five requests, timed from asking macOS to open the file until a new document window appeared on screen. The benchmark tracked window IDs so it also detected a newly selected tab.
+
+| Open | Previous (`415e823`) | Save As and tabs (`ee59e99`) |
+|---|---:|---:|
+| Compact, app closed | 445 ms | 468 ms |
+| Compact, app running | 260 ms | 245 ms |
+| Glass, app closed | 460 ms | 452 ms |
+| Glass, app running | 272 ms | 237 ms |
+
+The new build took roughly 0.45 seconds to launch and 0.24 seconds to open another PDF. Individual runs varied more than the differences between these medians.
+
+### Earlier benchmark
+
+The following measurements predate the tabs release and include Preview and a larger PDF. They show how long it took from asking macOS to open a PDF until its window is on screen. Measured on an M1 MacBook Air,
 median of 7 runs. "Cold" means the app wasn't running; "warm" means it was.
 
 | | Compact bar | Glass toolbar | Preview |
@@ -89,13 +101,12 @@ median of 7 runs. "Cold" means the app wasn't running; "warm" means it was.
 | 1,500-page PDF, cold | 401 ms | 534 ms | 971 ms |
 | 1,500-page PDF, warm | 141 ms | 301 ms | 665 ms |
 
-About 80 ms of every warm time is macOS delivering the open request before the app sees it.
+The measurements include the time macOS takes to deliver the open request.
 
 What makes it fast:
 
 - **It stays running** after the last window closes (like Preview), so later opens skip launching the app.
-- **The compact bar avoids stock controls.** On macOS 26 the glass toolbar and standard AppKit controls render
-  through SwiftUI, which is what makes the glass toolbar slower. The compact bar is drawn by hand (`ReaderBar.swift`).
+- **The compact bar avoids stock controls.** The compact bar draws its own controls (`ReaderBar.swift`).
 - **Nothing is built until it's needed.** Sidebar panes, the highlight scan, the compact bar's search field and the
   title-bar file icon are created after the page is on screen, or on first use.
 - **No extras at open:** no zoom-from-Finder animation, no window restoration, no Writing Tools menu setup at
@@ -122,6 +133,8 @@ What makes it fast:
   another computer, and two copies of the same PDF share them.
 
 ## Tools
+
+Use a disposable app copy with a distinct bundle ID for timing. The benchmark terminates running instances with the target bundle ID. For warm runs with the checked-in tool, turn off **Window ▸ Open PDFs in Tabs** because the tool waits for the visible window count to increase.
 
 ```bash
 swift tools/make_fixtures.swift Tests/fixtures     # test PDFs: 1 page, 1,500 pages, outline + annotations, a form
