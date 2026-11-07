@@ -32,6 +32,7 @@ final class HighlightsPane: NSView, NSTableViewDataSource, NSTableViewDelegate {
         let column = NSTableColumn(identifier: .init("entry"))
         table.addTableColumn(column)
         table.headerView = nil
+        table.backgroundColor = .clear
         table.style = .sourceList
         table.dataSource = self
         table.delegate = self
@@ -39,8 +40,8 @@ final class HighlightsPane: NSView, NSTableViewDataSource, NSTableViewDelegate {
         table.action = #selector(clicked)
         let scroll = NSScrollView()
         scroll.documentView = table
-        scroll.hasVerticalScroller = true
         scroll.drawsBackground = false
+        scroll.hasVerticalScroller = true
         status.textColor = .secondaryLabelColor
         status.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
         status.translatesAutoresizingMaskIntoConstraints = false

@@ -24,7 +24,10 @@ final class ReaderBar: NSView {
     let rotateButton = BarButton(symbol: "rotate.right", label: "Rotate Page (⌘R)", action: #selector(R.rotateRight(_:)))
     let bookmarkButton = BarButton(symbol: "bookmark", label: "Bookmarks", action: #selector(R.showBookmarks(_:)))
     let saveAsButton = BarButton(symbol: "square.and.arrow.down", label: "Save As… (⇧⌘S)", action: #selector(R.savePDFAs(_:)))
+    let previousMatch = BarButton(symbol: "chevron.up", label: "Previous Match", action: #selector(R.findPrevious(_:)))
+    let nextMatch = BarButton(symbol: "chevron.down", label: "Next Match", action: #selector(R.findNext(_:)))
     let findStatus = NSTextField(labelWithString: "")
+    let reviewButton = BarButton(symbol: "sidebar.right", label: "Show or Hide Annotations & Search", action: #selector(R.toggleReviewSidebar(_:)))
     let searchButton = BarButton(symbol: "magnifyingglass", label: "Find", action: #selector(R.startFind(_:)))
     /// Created on first use (⌘F or the magnifier), so opening a document never pays for it.
     private(set) var searchField: NSTextField?
@@ -49,8 +52,11 @@ final class ReaderBar: NSView {
 
         stack.setViews([
             sidebarButton, titleLabel, previousButton, FieldBackground(pageField, width: 40), pageCountLabel, nextButton,
-            highlightButton, noteButton, zoomOutButton, viewMenuButton, zoomInButton, rotateButton, bookmarkButton, saveAsButton, findStatus, searchButton,
+            highlightButton, noteButton, zoomOutButton, viewMenuButton, zoomInButton, rotateButton, bookmarkButton, saveAsButton, previousMatch, findStatus, nextMatch, searchButton, reviewButton,
         ], in: .leading)
+        viewMenuButton.widthAnchor.constraint(equalToConstant: 100).isActive = true
+        previousMatch.isHidden = true
+        nextMatch.isHidden = true
         stack.spacing = 2
         stack.setCustomSpacing(8, after: sidebarButton)
         stack.setCustomSpacing(16, after: titleLabel)
@@ -293,6 +299,13 @@ final class ReaderContentView: NSView {
         pdfUnderToolbar.isActive = hidden
     }
 
+    override func layout() {
+        // The native tab strip reserves a four-point lower padding band.
+        // Extend the PDF into that band so it meets the tab strip.
+        pdfBelowBar.constant = window?.tabGroup?.isTabBarVisible == true ? -4 : 0
+        super.layout()
+    }
+
     init(pdfView: NSView, frame: NSRect) {
         super.init(frame: frame)
         for subview in [pdfView, sidebarHandle] {
@@ -376,5 +389,15 @@ final class SidebarResizeHandle: NSView {
             if next.type == .leftMouseUp { break }
         }
         dragging = false
+    }
+}
+
+// Keep split dividers inside the document area when content extends beneath the titlebar.
+final class ReaderSplitView: NSSplitView {
+    override func drawDivider(in rect: NSRect) {
+        guard let window else { return super.drawDivider(in: rect) }
+        let contentRect = convert(window.contentLayoutRect, from: nil)
+        let clipped = rect.intersection(contentRect)
+        if !clipped.isEmpty { super.drawDivider(in: clipped) }
     }
 }

@@ -7,9 +7,10 @@ import PDFKit
 /// The "menu" sidebar: Contents | Thumbnails | Highlights. Nothing here is built until the sidebar is first shown,
 /// and each pane is built only when its tab is first selected.
 final class SidebarViewController: NSViewController {
-    enum Tab: Int { case contents, thumbnails, highlights }
+    enum Tab: Int { case contents, thumbnails, highlights, results }
 
     private unowned let owner: ReaderWindowController
+    private let available: [Tab]
     private let tabs = NSSegmentedControl()
     private let container = NSView()
     private var panes: [Tab: NSView] = [:]
@@ -18,7 +19,8 @@ final class SidebarViewController: NSViewController {
     private var outlinePane: OutlinePane? { panes[.contents] as? OutlinePane }
     private var highlightsPane: HighlightsPane? { panes[.highlights] as? HighlightsPane }
 
-    init(owner: ReaderWindowController) {
+    init(owner: ReaderWindowController, review: Bool = false) {
+        available = review ? [.highlights, .results] : [.contents, .thumbnails]
         self.owner = owner
         super.init(nibName: nil, bundle: nil)
     }
@@ -26,19 +28,33 @@ final class SidebarViewController: NSViewController {
     required init?(coder: NSCoder) { fatalError() }
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 240, height: 600))
+        let background = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 240, height: 600))
+        background.material = .sidebar
+        background.blendingMode = .behindWindow
+        background.state = .followsWindowActiveState
+        view = NSView(frame: background.frame)
+        background.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(background)
+        NSLayoutConstraint.activate([
+            background.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            background.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            background.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            background.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
     }
 
-    func activate() {
+    func activate(initial: Tab? = nil) {
         guard !built, owner.pdf != nil else { return }
         built = true
-        tabs.segmentCount = 3
+        tabs.segmentCount = available.count
         tabs.trackingMode = .selectOne
-        for (i, (symbol, tip)) in [("list.bullet.indent", "Contents"), ("square.grid.2x2", "Thumbnails"),
-                                   ("highlighter", "Highlights & Notes")].enumerated() {
+        let labels = [("list.bullet.indent", "Contents"), ("square.grid.2x2", "Thumbnails"),
+                      ("highlighter", "Highlights & Notes"), ("magnifyingglass", "Find Results")]
+        for (i, tab) in available.enumerated() {
+            let (symbol, tip) = labels[tab.rawValue]
             tabs.setImage(NSImage(systemSymbolName: symbol, accessibilityDescription: tip), forSegment: i)
             tabs.setToolTip(tip, forSegment: i)
-            tabs.setWidth(52, forSegment: i)
+            tabs.setWidth(42, forSegment: i)
         }
         tabs.target = self
         tabs.action = #selector(tabClicked)
@@ -56,17 +72,20 @@ final class SidebarViewController: NSViewController {
         ])
         let saved = Tab(rawValue: UserDefaults.standard.integer(forKey: "SidebarTab")) ?? .contents
         let hasOutline = (owner.pdf?.outlineRoot?.numberOfChildren ?? 0) > 0
-        select(saved == .contents && !hasOutline ? .thumbnails : saved, remember: false)
+        let preferred = available.contains(saved) ? saved : available[0]
+        select(initial ?? (preferred == .contents && !hasOutline ? .thumbnails : preferred), remember: false)
     }
 
     @objc private func tabClicked() {
-        if let tab = Tab(rawValue: tabs.selectedSegment) { select(tab) }
+        let tab = available[tabs.selectedSegment]
+        select(tab)
+        if tab == .results { owner.startFind(nil) }
     }
 
     func select(_ tab: Tab, remember: Bool = true) {
-        guard built else { return }
-        tabs.selectedSegment = tab.rawValue
-        if remember { UserDefaults.standard.set(tab.rawValue, forKey: "SidebarTab") }
+        guard built, let index = available.firstIndex(of: tab) else { return }
+        tabs.selectedSegment = index
+        if remember && available.contains(.contents) { UserDefaults.standard.set(tab.rawValue, forKey: "SidebarTab") }
         guard tab != selected else { return }
         selected = tab
         container.subviews.forEach { $0.removeFromSuperview() }
@@ -85,6 +104,7 @@ final class SidebarViewController: NSViewController {
 
     private func makePane(_ tab: Tab) -> NSView {
         switch tab {
+        case .results: return owner.find.makeResultsPane()
         case .contents: return OutlinePane(pdfView: owner.pdfView)
         case .thumbnails: return ThumbnailsPane(pdfView: owner.pdfView)
         case .highlights:

@@ -22,18 +22,24 @@ enum MainMenu {
         file.addItem(withTitle: "Open…", action: #selector(NSDocumentController.openDocument(_:)), keyEquivalent: "o")
         // AppKit inserts and manages "Open Recent" itself on macOS 26; adding our own gave two.
         file.addItem(.separator())
+        file.addItem(item("Reopen Closed Tab", #selector(AppDelegate.reopenClosedTab(_:)), "t", [.command, .shift]))
         file.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         file.addItem(withTitle: "Save", action: #selector(NSDocument.save(_:)), keyEquivalent: "s")
         file.addItem(item("Save As…", #selector(NSDocument.saveAs(_:)), "s", [.command, .shift]))
         file.addItem(withTitle: "Autosave Changes", action: #selector(AppDelegate.toggleAutosave(_:)), keyEquivalent: "")
+
+        file.addItem(item("Export Highlights & Notes…", #selector(ReaderWindowController.exportAnnotations(_:)), ""))
+        file.addItem(item("Print…", #selector(ReaderWindowController.printPages(_:)), "p"))
 
         // Edit is inserted after launch; see addEditMenu.
 
         typealias R = ReaderWindowController
         let view = submenu(in: main, title: "View")
         view.addItem(item("Show Sidebar", #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .option]))
+        view.addItem(item("Show Annotations & Search Sidebar", #selector(R.toggleReviewSidebar(_:)), ""))
         view.addItem(item("Contents", #selector(R.showContents(_:)), "1", [.command, .option]))
         view.addItem(item("Thumbnails", #selector(R.showThumbnails(_:)), "2", [.command, .option]))
+        view.addItem(item("Find Results", #selector(R.showResults(_:)), "4", [.command, .option]))
         view.addItem(item("Highlights & Notes", #selector(R.showHighlights(_:)), "3", [.command, .option]))
         view.addItem(.separator())
         // Plain-letter shortcuts are only enabled while the page (not a text field) has focus.
@@ -105,6 +111,7 @@ enum MainMenu {
         edit.addItem(item("Redo", Selector(("redo:")), "z", [.command, .shift]))
         edit.addItem(.separator())
         edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(item("Copy with Source", #selector(R.copyWithSource(_:)), "c", [.command, .shift]))
         edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         edit.addItem(.separator())
         edit.addItem(item("Find…", #selector(R.startFind(_:)), "f"))

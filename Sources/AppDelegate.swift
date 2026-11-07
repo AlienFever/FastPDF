@@ -10,6 +10,21 @@ extension Notification.Name {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
+    private var closedPDFs: [URL] = []
+
+    func rememberClosedPDF(_ url: URL) {
+        closedPDFs.removeAll { $0 == url }
+        closedPDFs.append(url)
+        if closedPDFs.count > 32 { closedPDFs.removeFirst() }
+    }
+
+    @objc func reopenClosedTab(_ sender: Any?) {
+        guard let url = closedPDFs.popLast() else { return }
+        NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
+            if let error { NSApp.presentError(error) }
+        }
+    }
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.build()
     }
@@ -90,6 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
+        case #selector(reopenClosedTab(_:)): return !closedPDFs.isEmpty
         case #selector(togglePDFTabs(_:)):
             item.state = ReaderWindowController.opensPDFsInTabs ? .on : .off
         case #selector(toggleAutosave(_:)):

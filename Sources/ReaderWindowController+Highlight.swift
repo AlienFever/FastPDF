@@ -51,8 +51,9 @@ extension ReaderWindowController {
         items[0].image = HighlightColor.primary.swatch
         items[1].image = NSImage(systemSymbolName: "underline", accessibilityDescription: nil)
         items[2].image = NSImage(systemSymbolName: "strikethrough", accessibilityDescription: nil)
-        items.forEach { $0.target = self }
-        return items
+        let itemsWithCopy = items + [NSMenuItem(title: "Copy with Source", action: #selector(copyWithSource(_:)), keyEquivalent: "")]
+        itemsWithCopy.forEach { $0.target = self }
+        return itemsWithCopy
     }
 
     func mark(_ selection: PDFSelection, style: MarkupStyle) {
@@ -116,7 +117,7 @@ extension ReaderWindowController {
             page.addAnnotation(annotation)
             reader.record(AnnotationChange(.add, annotation, pageIndex: pdf.index(for: page)))
         }
-        sidebar.annotationsChanged(added: added.map { ($0.0, $0.1, pdf.index(for: $0.1)) },
+        reviewSidebar?.annotationsChanged(added: added.map { ($0.0, $0.1, pdf.index(for: $0.1)) },
                                    removed: removed.map { ($0.0, $0.1, pdf.index(for: $0.1)) })
         let undo = reader.undoManager
         undo?.registerUndo(withTarget: self) { target in

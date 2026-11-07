@@ -33,19 +33,23 @@ To have double-clicked PDFs open here, choose **FastPDF for Mac ▸ Make FastPDF
 | Layout | **D** cycles Single Page → Continuous → Two Pages → Two Pages with Cover, or pick one with ⌘1 / ⌘2 / ⌘3 / ⌘4. *Two Pages with Cover* shows page 1 on its own and pairs the rest like an open book (2–3, 4–5, …). Each file remembers its layout. |
 | Zoom | **V** switches Fit Width ⇄ Fit Page. Also Fit Width ⌘8, Fit Page ⌘9, Actual Size ⌘0, ⌘+ / ⌘−, pinch. Fit Width and Fit Page stay in effect when the window is resized. |
 | Rotate | The rotate button or ⌘R turns the current page 90° clockwise; ⌘L turns it counter-clockwise (also in the View menu and the right-click menu). Saved into the PDF like other changes. |
-| Sidebar | ⌥⌘S shows or hides it. Contents (the PDF's outline) ⌥⌘1, Thumbnails ⌥⌘2, Highlights & Notes ⌥⌘3; click any entry to jump to it. Drag the grip on the sidebar's edge to resize it; double-click the grip to reset. |
+| Navigation sidebar | ⌥⌘S shows or hides it. Contents (the PDF's outline) ⌥⌘1, Thumbnails ⌥⌘2; click any entry to jump to it. Drag the grip on the sidebar's edge to resize it; double-click the grip to reset. |
+| Annotations & search sidebar | Open Highlights & Notes with ⌥⌘3 or Find Results with ⌥⌘4. This right panel can stay open alongside Contents or Thumbnails. Toggle it with the right-sidebar button beside Find, or from the View menu. |
+| Sharing | ⇧⌘C copies selected text with the PDF filename and page range. File ▸ Export Highlights & Notes… saves Markdown grouped by page. ⌘P prints the document or a page range. |
 | Bookmarks | ⌘D bookmarks the current page (or removes the bookmark). The bookmark button or ⌥⌘B lists them; they're also in the Bookmarks menu. |
-| Find | ⌘F, then Return or ⌘G for the next match, ⇧Return or ⇧⌘G for the previous one, Esc to close. |
+| Find | Typing in the search field previews up to four passages below the field. Click one to jump to it, or choose **Open Results in Sidebar** for the full list. **View ▸ Find Results (⌥⌘4)** opens a list of matches with page numbers and excerpts. Results wrap across up to three lines, with the full excerpt available on hover. Click a row to jump to the passage. Use the previous/next match arrows to navigate results. ⌘F, then Return or ⌘G for the next match, ⇧Return or ⇧⌘G for the previous one, Esc to close. |
 | Highlight, underline, strike through | Select text, then **H** (highlight, primary color), **K** (highlight, secondary color), **U** (underline) or **S** (strikethrough), or right-click the selection. With nothing selected, these keys turn on a *mode*: every selection is marked as soon as you let go; press the same key again or Esc to stop. Choose the two highlight colors and the line color (from seven) in the **Annotate** menu. Right-click a mark to change its color or remove it. |
 | Sticky notes | **N**, then click where the note should go (with text selected, N puts the note beside it), or right-click ▸ Add Note Here. Type, then ⌘Return or click outside to finish. Click any note, including notes already in the PDF, to read, edit or delete it. |
 | Forms | Fill in PDF forms: type into text fields, tick checkboxes and radio buttons, pick from dropdowns. Saved with everything else. |
 | Undo | ⌘Z / ⇧⌘Z for highlights, underlines, strike-throughs, notes and page rotations. |
-| Toolbar | **⌥⌘T** (View ▸ Glass Toolbar) switches between the standard macOS 26 glass toolbar (the default; pages scroll underneath it) and a compact row beside the window buttons. |
-| Tabs | PDFs open in native macOS tabs by default. **Window ▸ Open PDFs in Tabs** toggles tabs and remembers the choice. Turning it off separates open PDFs into windows; turning it on groups them together. Tabs sit below the controls and above the PDF in both compact and Glass modes. Use Control-Tab / Control-Shift-Tab to switch tabs. |
+| Toolbar | **⌥⌘T** (View ▸ Glass Toolbar) switches between the standard macOS 26 glass toolbar (the default; pages scroll underneath it) and a compact row beside the window buttons. The zoom menu keeps a fixed width when switching between fit modes and percentages. |
+| Tabs | PDFs open in native macOS tabs by default. **Window ▸ Open PDFs in Tabs** toggles tabs and remembers the choice. Turning it off separates open PDFs into windows; turning it on groups them together. Tabs sit below the controls and above the PDF in both compact and Glass modes. Use Control-Tab / Control-Shift-Tab to switch tabs. **File ▸ Reopen Closed Tab (⇧⌘T)** restores recently closed PDFs during this session. To detach the current tab, right-click the page and choose **Move Tab to New Window**. |
 | Reading position | Each file reopens at the exact spot, zoom and layout you left it in, even after it's renamed or moved. |
 
 H, K, U, S, N, V and D are single keys. They only act while the page has focus, never while you're typing in the
 find box, the page box or a form field.
+
+The screenshots below show an earlier release, before the separate right sidebar and search preview were added.
 
 Earlier screenshot of the compact title-bar controls (⌥⌘T):
 
@@ -89,6 +93,11 @@ On November 6, 2026, we compared the Save As and tabs release with its immediate
 
 The new build took roughly 0.45 seconds to launch and 0.24 seconds to open another PDF. Individual runs varied more than the differences between these medians.
 
+A subsequent five-run spot check after adding Reopen Closed Tab and Find Results measured compact
+cold/warm medians of 481/271 ms and Glass medians of 477/252 ms. The same-session baseline measured
+446/350 ms and 462/340 ms, respectively. Later sharing and sidebar-layout changes have build and focused
+functional checks, but have not received another opening-speed benchmark.
+
 ### Earlier benchmark
 
 The following measurements predate the tabs release and include Preview and a larger PDF. They show how long it took from asking macOS to open a PDF until its window is on screen. Measured on an M1 MacBook Air,
@@ -113,8 +122,17 @@ What makes it fast:
   launch, no file-type detection.
 - **The highlights list fills in on a background thread**, using a separate copy of the document.
 
+## Recent layout fixes
+
+The right sidebar background starts below the tabs, and split dividers are clipped below the title area.
+The split view explicitly uses side-by-side panels. Compact mode extends the PDF four points into the
+padding beneath the native tab strip. PDF page margins retain their default behavior.
+Search previews account for the search field’s coordinate orientation to open below it.
+
 ## Known limits
 
+- **Reopen Closed Tab** keeps up to 32 file URLs for the current app session. Reopening restores saved reading state and depends on the file remaining accessible.
+- **Copy with Source** includes the filename and physical PDF page numbers. Annotation export includes current in-memory highlights, underlines, strike-throughs and notes. Both respect the PDF’s copy permission.
 - **Annotations:** you can add highlights, underlines, strike-throughs and sticky notes. Text boxes, drawings,
   shapes and other annotation types already in a PDF are displayed (and text boxes listed), but can't be created
   or edited.
@@ -126,7 +144,6 @@ What makes it fast:
 - **Undoing the deletion of an annotation that was already in the PDF** brings back its type, position, color and
   text, but not other details such as the original author or date.
 - **Forms:** signature fields can't be signed, and form calculations or scripts (JavaScript) don't run.
-- **No printing.**
 - **Find** is always case- and accent-insensitive, and doesn't match a phrase that's split across two lines
   (a PDFKit limitation).
 - **Bookmarks and reading positions are stored on this Mac, not in the PDF.** They don't travel with the file to

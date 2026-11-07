@@ -15,6 +15,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
     let pdfView = ReaderPDFView()
     private(set) lazy var sidebar = SidebarViewController(owner: self)
     private(set) lazy var find = FindController(owner: self)
+    private(set) var reviewSidebar: SidebarViewController?
+    private var reviewItem: NSSplitViewItem?
     private var sidebarItem: NSSplitViewItem!
     private var sidebarObservation: NSKeyValueObservation?
 
@@ -86,6 +88,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         content.view = self.content
         configureBar()
         let split = NSSplitViewController()
+        split.splitView = ReaderSplitView()
+        split.splitView.isVertical = true
+        split.splitView.dividerStyle = .thin
         sidebarItem = NSSplitViewItem(sidebarWithViewController: sidebar)
         sidebarItem.minimumThickness = 200
         sidebarItem.maximumThickness = 420
@@ -154,6 +159,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
 
     /// Find results take precedence; otherwise say when highlight mode is on.
     func refreshStatus() {
+        bar.previousMatch.isHidden = !find.hasMatches
+        bar.nextMatch.isHidden = !find.hasMatches
+        toolbarControls.findNavigation?.isEnabled = find.hasMatches
         var text = find.statusText
         if text.isEmpty, let mode = markupMode { text = "\(mode.kind.activeVerb) in \(mode.color.name) · Esc to stop" }
         if text.isEmpty, placingNote { text = "Click where the note should go · Esc to cancel" }
@@ -170,7 +178,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
 
     private func configureBar() {
         for button in [bar.previousButton, bar.nextButton, bar.highlightButton, bar.noteButton, bar.zoomOutButton, bar.viewMenuButton,
-                       bar.zoomInButton, bar.rotateButton, bar.bookmarkButton, bar.saveAsButton, bar.searchButton] {
+                       bar.zoomInButton, bar.rotateButton, bar.bookmarkButton, bar.saveAsButton, bar.previousMatch, bar.nextMatch, bar.searchButton, bar.reviewButton] {
             button.target = self
         }
         bar.pageField.target = self
@@ -289,8 +297,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         saveWork?.cancel()
         saveState()
+        if let url = reader?.fileURL { (NSApp.delegate as? AppDelegate)?.rememberClosedPDF(url) }
         find.cancel()
-        sidebar.cancelWork()
+        reviewSidebar?.cancelWork()
     }
 
     // MARK: Page tracking and persistence
@@ -602,10 +611,38 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
     @objc func showThumbnails(_ sender: Any?) { showSidebar(.thumbnails) }
     @objc func showHighlights(_ sender: Any?) { showSidebar(.highlights) }
 
+    @objc func showResults(_ sender: Any?) { showSidebar(.results); startFind(sender) }
+
     private func showSidebar(_ tab: SidebarViewController.Tab) {
+        if tab == .highlights || tab == .results {
+            guard let split = window?.contentViewController as? NSSplitViewController else { return }
+            if reviewItem == nil {
+                let pane = SidebarViewController(owner: self, review: true)
+                let item = NSSplitViewItem(viewController: pane)
+                item.canCollapse = true
+                item.minimumThickness = 200
+                item.maximumThickness = 420
+                reviewSidebar = pane
+                reviewItem = item
+                split.addSplitViewItem(item)
+            }
+            reviewItem?.isCollapsed = false
+            reviewSidebar?.activate(initial: tab)
+            reviewSidebar?.select(tab)
+            return
+        }
         if sidebarItem.isCollapsed { sidebarItem.isCollapsed = false }
         sidebar.activate()
         sidebar.select(tab)
+    }
+
+    @objc func toggleReviewSidebar(_ sender: Any?) {
+        if let item = reviewItem, !item.isCollapsed {
+            item.isCollapsed = true
+            content.sidebarHandle.isHidden = sidebarItem.isCollapsed
+        } else if let item = reviewItem {
+            item.isCollapsed = false
+        } else { showSidebar(.highlights) }
     }
 
     // MARK: Find
@@ -667,6 +704,11 @@ extension ReaderWindowController: NSMenuItemValidation {
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         let hasPages = (pdf?.pageCount ?? 0) > 0 && pdf?.isLocked == false
         switch item.action {
+        case #selector(toggleReviewSidebar(_:)):
+            item.title = reviewItem?.isCollapsed == false ? "Hide Annotations & Search Sidebar" : "Show Annotations & Search Sidebar"
+        case #selector(copyWithSource(_:)): return pdf?.allowsCopying == true && pdfView.currentSelection?.hasText == true
+        case #selector(exportAnnotations(_:)): return hasPages && pdf?.allowsCopying == true
+        case #selector(printPages(_:)): return hasPages && pdf?.allowsPrinting == true
         case #selector(fitWidth(_:)): item.state = fit == .width ? .on : .off
         case #selector(fitPage(_:)): item.state = fit == .page ? .on : .off
         case #selector(singlePage(_:)): item.state = pdfView.displayMode == .singlePage ? .on : .off
@@ -803,6 +845,10 @@ final class ReaderPDFView: PDFView {
                 items = controller.selectionMenuItems() + [controller.addNoteMenuItem(at: pagePoint, on: page), .separator()]
             }
             for (i, item) in items.enumerated() { menu.insertItem(item, at: i) }
+        }
+        if let window, (window.tabbedWindows?.count ?? 0) > 1 {
+            menu.addItem(.separator())
+            menu.addItem(withTitle: "Move Tab to New Window", action: #selector(NSWindow.moveTabToNewWindow(_:)), keyEquivalent: "").target = window
         }
         // Tidy separators left behind by the removals.
         var previousWasSeparator = true

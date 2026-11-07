@@ -18,6 +18,8 @@ extension NSToolbarItem.Identifier {
     static let rotate = Self("rotate")
     static let bookmarks = Self("bookmarks")
     static let search = Self("search")
+    static let findNavigation = Self("findNavigation")
+    static let reviewSidebar = Self("reviewSidebar")
     static let saveAs = Self("saveAs")
 }
 
@@ -29,6 +31,7 @@ final class ToolbarControls {
     var bookmarkItem: NSToolbarItem?
     var highlightItem: NSToolbarItem?
     var noteItem: NSToolbarItem?
+    var findNavigation: NSSegmentedControl?
     var searchItem: NSSearchToolbarItem?
 }
 
@@ -48,7 +51,7 @@ extension ReaderWindowController: NSToolbarDelegate {
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [.toggleSidebar, .sidebarTrackingSeparator, .previousPage, .page, .nextPage, .flexibleSpace,
-         .annotateGroup, .zoomGroup, .rotate, .bookmarks, .saveAs, .search]
+         .annotateGroup, .zoomGroup, .rotate, .bookmarks, .saveAs, .findNavigation, .search, .reviewSidebar]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -104,6 +107,7 @@ extension ReaderWindowController: NSToolbarDelegate {
                                              target: self, action: #selector(zoomSegmentClicked(_:)))
             control.setImage(NSImage(systemSymbolName: "minus.magnifyingglass", accessibilityDescription: "Zoom Out"), forSegment: 0)
             control.setImage(NSImage(systemSymbolName: "plus.magnifyingglass", accessibilityDescription: "Zoom In"), forSegment: 2)
+            control.setWidth(100, forSegment: 1)
             control.setWidth(Self.zoomButtonWidth, forSegment: 0)
             control.setWidth(Self.zoomButtonWidth, forSegment: 2)
             control.setShowsMenuIndicator(true, forSegment: 1)
@@ -121,6 +125,20 @@ extension ReaderWindowController: NSToolbarDelegate {
             let item = button(id, "bookmark", "Bookmarks", #selector(showBookmarks(_:)))
             controls.bookmarkItem = item
             return item
+        case .findNavigation:
+            let control = NSSegmentedControl(labels: ["", ""], trackingMode: .momentary, target: self, action: #selector(stepSearch(_:)))
+            control.setImage(NSImage(systemSymbolName: "chevron.up", accessibilityDescription: "Previous Match"), forSegment: 0)
+            control.setImage(NSImage(systemSymbolName: "chevron.down", accessibilityDescription: "Next Match"), forSegment: 1)
+            control.setToolTip("Previous Match", forSegment: 0)
+            control.setToolTip("Next Match", forSegment: 1)
+            control.isEnabled = find.hasMatches
+            controls.findNavigation = control
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.view = control
+            item.label = "Search Matches"
+            return item
+        case .reviewSidebar:
+            return button(id, "sidebar.right", "Show or Hide Annotations & Search", #selector(toggleReviewSidebar(_:)))
         case .saveAs:
             return button(id, "square.and.arrow.down", "Save As… (⇧⌘S)", #selector(savePDFAs(_:)))
         case .search:
@@ -137,6 +155,8 @@ extension ReaderWindowController: NSToolbarDelegate {
             return nil
         }
     }
+
+    @objc func stepSearch(_ sender: NSSegmentedControl) { find.step(sender.selectedSegment == 0 ? -1 : 1) }
 
     static let zoomButtonWidth: CGFloat = 34
 
