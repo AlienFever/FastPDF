@@ -227,10 +227,11 @@ final class FindController: NSObject, NSSearchFieldDelegate, PDFDocumentDelegate
     }
 
     private func show(_ index: Int) {
-        guard let pdfView = owner?.pdfView, matches.indices.contains(index) else { return }
+        guard let owner, matches.indices.contains(index) else { return }
         let selection = matches[index]
-        pdfView.go(to: selection)
-        pdfView.setCurrentSelection(selection, animate: true)
+        owner.pdfView.go(to: selection)
+        owner.reveal(selection)
+        owner.pdfView.setCurrentSelection(selection, animate: true)
     }
 
     // MARK: PDFDocumentDelegate

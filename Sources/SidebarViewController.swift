@@ -27,20 +27,10 @@ final class SidebarViewController: NSViewController {
 
     required init?(coder: NSCoder) { fatalError() }
 
+    /// Both sidebars are sidebar split items, so macOS draws the translucent glass behind them. An extra
+    /// .sidebar material view in here layered a greyer, flatter tint over everything below the title bar.
     override func loadView() {
-        let background = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 240, height: 600))
-        background.material = .sidebar
-        background.blendingMode = .behindWindow
-        background.state = .followsWindowActiveState
-        view = NSView(frame: background.frame)
-        background.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(background)
-        NSLayoutConstraint.activate([
-            background.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            background.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            background.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            background.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-        ])
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 240, height: 600))
     }
 
     func activate(initial: Tab? = nil) {

@@ -37,6 +37,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         return accessory
     }()
     private(set) var usesGlassToolbar = false
+    /// In full screen, macOS hides a toolbar-less title bar (and the compact bar attached to it) until the pointer
+    /// reaches the top edge. Any toolbar keeps the title bar docked, so compact mode gets an empty one there.
+    private lazy var fullScreenToolbar = NSToolbar(identifier: "FastPDFFullScreen")
 
     /// When set, every text selection is highlighted in this color as soon as the mouse is released.
     /// When set, every text selection is marked up (highlight / underline / strike) as soon as the mouse is released.
@@ -137,8 +140,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
             if window.toolbar == nil { window.toolbar = glassToolbar }
             window.standardWindowButton(.documentIconButton)?.isHidden = false
         } else {
-            window.toolbar = nil
-            window.toolbarStyle = .automatic
+            window.toolbar = window.styleMask.contains(.fullScreen) ? fullScreenToolbar : nil
+            window.toolbarStyle = window.styleMask.contains(.fullScreen) ? .unifiedCompact : .automatic
             if !window.titlebarAccessoryViewControllers.contains(where: { $0 === compactAccessory }) {
                 window.addTitlebarAccessoryViewController(compactAccessory)
             }
@@ -291,8 +294,21 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { reader?.undoManager }
 
+    func windowWillEnterFullScreen(_ notification: Notification) {
+        guard let window, !usesGlassToolbar else { return }
+        window.toolbar = fullScreenToolbar
+        window.toolbarStyle = .unifiedCompact
+    }
+
     func windowDidEnterFullScreen(_ notification: Notification) { bar.setClearsWindowButtons(sidebarItem.isCollapsed) }
-    func windowDidExitFullScreen(_ notification: Notification) { bar.setClearsWindowButtons(sidebarItem.isCollapsed) }
+
+    func windowDidExitFullScreen(_ notification: Notification) {
+        if let window, !usesGlassToolbar, window.toolbar === fullScreenToolbar {
+            window.toolbar = nil
+            window.toolbarStyle = .automatic
+        }
+        bar.setClearsWindowButtons(sidebarItem.isCollapsed)
+    }
 
     func windowWillClose(_ notification: Notification) {
         saveWork?.cancel()
@@ -432,6 +448,29 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         let edge = clip.convert(top, from: pdfView)
         var bounds = clip.bounds
         bounds.origin.y += target.y - edge.y
+        clip.scroll(to: clip.constrainBoundsRect(bounds).origin)
+        scrollView.reflectScrolledClipView(clip)
+    }
+
+    /// PDFKit's go(to:) puts a match at the very top of the PDF view, which in glass mode (and in full screen, where
+    /// the tab bar joins the toolbar) runs up under the toolbar and tabs. If the match isn't comfortably inside the
+    /// uncovered area, bring it to about a third of the way down that area.
+    func reveal(_ selection: PDFSelection) {
+        guard let window, let page = selection.pages.first,
+              let scrollView = pdfView.documentView?.enclosingScrollView else { return }
+        pdfView.layoutDocumentView()
+        let match = pdfView.convert(selection.bounds(for: page), from: page)
+        let visible = pdfView.bounds.intersection(pdfView.convert(window.contentLayoutRect, from: nil))
+        guard !visible.isEmpty, !match.isEmpty else { return }
+        let margin = min(40, visible.height / 6)
+        if match.minY >= visible.minY + margin, match.maxY <= visible.maxY - margin { return }
+        let clip = scrollView.contentView
+        let third = visible.height / 3
+        let wanted = NSPoint(x: match.midX, y: pdfView.isFlipped ? visible.minY + third : visible.maxY - third)
+        let target = clip.convert(NSPoint(x: match.midX, y: match.midY), from: pdfView)
+        let spot = clip.convert(wanted, from: pdfView)
+        var bounds = clip.bounds
+        bounds.origin.y += target.y - spot.y
         clip.scroll(to: clip.constrainBoundsRect(bounds).origin)
         scrollView.reflectScrolledClipView(clip)
     }
@@ -618,7 +657,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
             guard let split = window?.contentViewController as? NSSplitViewController else { return }
             if reviewItem == nil {
                 let pane = SidebarViewController(owner: self, review: true)
-                let item = NSSplitViewItem(viewController: pane)
+                // Sidebar behavior (not a plain pane) gives it the same translucent material as the left sidebar.
+                let item = NSSplitViewItem(sidebarWithViewController: pane)
                 item.canCollapse = true
                 item.minimumThickness = 200
                 item.maximumThickness = 420
