@@ -448,7 +448,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         let edge = clip.convert(top, from: pdfView)
         var bounds = clip.bounds
         bounds.origin.y += target.y - edge.y
-        clip.scroll(to: clip.constrainBoundsRect(bounds).origin)
+        guard bounds.origin.y.isFinite else { return }
+        let origin = clip.constrainBoundsRect(bounds).origin
+        // AppKit traps (SIGTRAP "Invalid view geometry") on a NaN scroll origin, so never pass one through.
+        guard origin.x.isFinite, origin.y.isFinite else { return }
+        clip.scroll(to: origin)
         scrollView.reflectScrolledClipView(clip)
     }
 
@@ -461,7 +465,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         pdfView.layoutDocumentView()
         let match = pdfView.convert(selection.bounds(for: page), from: page)
         let visible = pdfView.bounds.intersection(pdfView.convert(window.contentLayoutRect, from: nil))
-        guard !visible.isEmpty, !match.isEmpty else { return }
+        guard !visible.isEmpty, !match.isEmpty, match.isFiniteRect, visible.isFiniteRect else {
+            NSLog("FastPDF reveal skipped: match=%@ visible=%@", NSStringFromRect(match), NSStringFromRect(visible))
+            return
+        }
         let margin = min(40, visible.height / 6)
         if match.minY >= visible.minY + margin, match.maxY <= visible.maxY - margin { return }
         let clip = scrollView.contentView
@@ -471,7 +478,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate {
         let spot = clip.convert(wanted, from: pdfView)
         var bounds = clip.bounds
         bounds.origin.y += target.y - spot.y
-        clip.scroll(to: clip.constrainBoundsRect(bounds).origin)
+        let origin = clip.constrainBoundsRect(bounds).origin
+        // AppKit traps (SIGTRAP "Invalid view geometry") on a NaN scroll origin, so never pass one through.
+        guard origin.x.isFinite, origin.y.isFinite else {
+            NSLog("FastPDF reveal skipped: target=%@ spot=%@ clip=%@ origin=%@", NSStringFromPoint(target),
+                  NSStringFromPoint(spot), NSStringFromRect(clip.bounds), NSStringFromPoint(origin))
+            return
+        }
+        clip.scroll(to: origin)
         scrollView.reflectScrolledClipView(clip)
     }
 
@@ -902,5 +916,12 @@ final class ReaderPDFView: PDFView {
     private var canScrollHorizontally: Bool {
         guard let scrollView = documentView?.enclosingScrollView, let content = scrollView.documentView else { return false }
         return content.frame.width > scrollView.contentView.bounds.width + 1
+    }
+}
+
+private extension CGRect {
+    /// False for rects with NaN or infinite parts (CGRect.isEmpty doesn't catch NaN).
+    var isFiniteRect: Bool {
+        origin.x.isFinite && origin.y.isFinite && size.width.isFinite && size.height.isFinite
     }
 }
